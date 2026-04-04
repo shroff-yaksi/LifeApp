@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Journal — Obsidian Life Protocol</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#07006c",
+              "inverse-surface": "#e5e1e4",
+              "surface-variant": "#353437",
+              "tertiary-container": "#d97721",
+              "secondary": "#c0c1ff",
+              "tertiary-fixed": "#ffdcc5",
+              "surface-container-lowest": "#0e0e10",
+              "tertiary-fixed-dim": "#ffb783",
+              "on-tertiary-container": "#452000",
+              "secondary-fixed": "#e1e0ff",
+              "on-tertiary-fixed": "#301400",
+              "inverse-on-surface": "#313032",
+              "error-container": "#93000a",
+              "surface-tint": "#c0c1ff",
+              "on-error": "#690005",
+              "surface-bright": "#39393b",
+              "on-error-container": "#ffdad6",
+              "inverse-primary": "#494bd6",
+              "surface-container-highest": "#353437",
+              "primary-container": "#8083ff",
+              "surface-container-low": "#1c1b1d",
+              "on-secondary-fixed": "#13144a",
+              "on-tertiary-fixed-variant": "#703700",
+              "secondary-fixed-dim": "#c0c1ff",
+              "on-primary-fixed-variant": "#2f2ebe",
+              "outline-variant": "#464554",
+              "on-surface-variant": "#c7c4d7",
+              "on-secondary-fixed-variant": "#404178",
+              "on-primary-container": "#0d0096",
+              "on-background": "#e5e1e4",
+              "outline": "#908fa0",
+              "on-secondary": "#292a60",
+              "error": "#ffb4ab",
+              "surface": "#131315",
+              "surface-container": "#201f22",
+              "primary-fixed": "#e1e0ff",
+              "on-surface": "#e5e1e4",
+              "primary": "#c0c1ff",
+              "tertiary": "#ffb783",
+              "surface-container-high": "#2a2a2c",
+              "surface-dim": "#131315",
+              "on-tertiary": "#4f2500",
+              "on-primary": "#1000a9",
+              "primary-fixed-dim": "#c0c1ff",
+              "on-secondary-container": "#b2b3f2",
+              "secondary-container": "#42447b",
+              "background": "#131315"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #131315;
+        color: #e5e1e4;
+        font-family: 'Inter', sans-serif;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-effect {
+        backdrop-filter: blur(20px);
+        background: rgba(28, 27, 29, 0.8);
+      }
+      /* Custom Activity Pulse implementation */
+      .activity-pulse {
+        height: 2px;
+        background: #353437;
+        position: relative;
+        overflow: hidden;
+      }
+      .activity-pulse-needle {
+        position: absolute;
+        height: 100%;
+        background: #c0c1ff;
+        box-shadow: 0 0 8px #c0c1ff;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen pb-24">
+<!-- TopAppBar Section -->
+<header class="w-full top-0 sticky z-50 bg-[#131315] shadow-[0_32px_32px_-12px_rgba(13,0,150,0.06)]">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform duration-200 hover:bg-white/5 p-2 rounded-full">
+<span class="material-symbols-outlined text-indigo-400">menu</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-extrabold tracking-tighter uppercase text-xs text-indigo-500">JOURNAL</h1>
+</div>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant/20 active:scale-95 transition-transform">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional man with a neutral expression in soft studio lighting with a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBlt18I0ZULYOJsfZRfxzZWOtkkXgvh3w6FabaqtwRspwzLx0ZEe-wIZmd4Yaq54guKsQG4jWrhjWFd0oyevi82K6Zcie7WnVXPtmSn3wc3lHoh5kXLYxyHckJWAqDdKEK2YQa9H6MEXOGkN72EYsnxV5_-ql3hAS-WOBmgiIbAQITgIPD-tjqFEkEZelF1o6rhRLkPe4289f_U-lU2FDUsHfSTJR62FSnrW4FIRWZxER02d8BJBJ77Nd2IQjuFFQmVcAIm1a6crk"/>
+</div>
+</div>
+</header>
+<main class="max-w-2xl mx-auto px-6 pt-8 space-y-10">
+<!-- Main Entry Card -->
+<section class="bg-[#1c1b1d] rounded-xl p-6 border border-white/5 space-y-8 shadow-2xl relative overflow-hidden">
+<!-- Background Accent Glow -->
+<div class="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 blur-[80px] rounded-full pointer-events-none"></div>
+<!-- Date Navigation Row -->
+<div class="flex items-center justify-between">
+<button class="text-indigo-500 hover:bg-white/5 p-2 rounded-xl transition-colors active:scale-90">
+<span class="material-symbols-outlined text-3xl">chevron_left</span>
+</button>
+<div class="text-center">
+<h2 class="font-headline font-bold text-lg text-on-surface tracking-tight">Monday, Mar 24</h2>
+<span class="inline-block mt-1 px-3 py-0.5 bg-primary/20 text-primary font-label text-[10px] font-bold uppercase tracking-widest rounded-full">Today</span>
+</div>
+<button class="text-slate-600 cursor-not-allowed p-2" disabled="">
+<span class="material-symbols-outlined text-3xl">chevron_right</span>
+</button>
+</div>
+<div class="activity-pulse w-full rounded-full">
+<div class="activity-pulse-needle w-1/3"></div>
+</div>
+<!-- Mood Row -->
+<div class="space-y-4">
+<label class="block font-label text-[11px] uppercase tracking-[0.15em] text-on-surface-variant font-semibold">How are you feeling?</label>
+<div class="flex justify-between gap-2">
+<button class="flex-1 aspect-square flex items-center justify-center text-2xl rounded-xl border border-white/5 bg-surface-container-low hover:bg-surface-container transition-all active:scale-95">😞</button>
+<button class="flex-1 aspect-square flex items-center justify-center text-2xl rounded-xl border border-white/5 bg-surface-container-low hover:bg-surface-container transition-all active:scale-95">😕</button>
+<button class="flex-1 aspect-square flex items-center justify-center text-2xl rounded-xl border border-white/5 bg-surface-container-low hover:bg-surface-container transition-all active:scale-95">😐</button>
+<button class="flex-1 aspect-square flex items-center justify-center text-2xl rounded-xl border-2 border-primary/40 bg-primary/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.1)]">🙂</button>
+<button class="flex-1 aspect-square flex items-center justify-center text-2xl rounded-xl border border-white/5 bg-surface-container-low hover:bg-surface-container transition-all active:scale-95">😄</button>
+</div>
+</div>
+<!-- Notes Input -->
+<div class="space-y-2">
+<textarea class="w-full min-h-[240px] bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-slate-600 font-body text-md leading-relaxed resize-none p-0" placeholder="Write anything on your mind..."></textarea>
+<div class="flex justify-end">
+<p class="font-label text-[10px] text-slate-500 font-medium tracking-wide">SAVED 10:45 AM</p>
+</div>
+</div>
+</section>
+<!-- Past Entries Card -->
+<section class="space-y-6">
+<div class="flex items-center justify-between px-2">
+<h3 class="font-headline font-extrabold text-sm tracking-tight text-on-surface">PAST ENTRIES</h3>
+<span class="material-symbols-outlined text-slate-500 text-sm">history</span>
+</div>
+<div class="space-y-3">
+<!-- Entry Item 1 -->
+<div class="group bg-[#1c1b1d]/40 rounded-xl p-5 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="font-headline font-bold text-xs text-secondary-fixed-dim">Sun, Mar 23</span>
+<span class="text-lg">😐</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 leading-relaxed">
+                        Focusing on systems architecture today. The protocol is feeling more robust as we finalize the dark mode tokens...
+                    </p>
+</div>
+<!-- Entry Item 2 -->
+<div class="group bg-[#1c1b1d]/40 rounded-xl p-5 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="font-headline font-bold text-xs text-secondary-fixed-dim">Sat, Mar 22</span>
+<span class="text-lg">😄</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 leading-relaxed">
+                        Great progress on the UI engine. Decided to push for a more editorial look and the results are starting to show...
+                    </p>
+</div>
+<!-- Entry Item 3 -->
+<div class="group bg-[#1c1b1d]/40 rounded-xl p-5 border border-white/5 hover:border-white/10 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="font-headline font-bold text-xs text-secondary-fixed-dim">Fri, Mar 21</span>
+<span class="text-lg">🙂</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant line-clamp-2 leading-relaxed">
+                        Refining the typography hierarchy. Plus Jakarta Sans really brings that premium authority to the headlines...
+                    </p>
+</div>
+</div>
+</section>
+<!-- Aesthetic Decoration: Quote of the Day -->
+<section class="pt-8 pb-12 text-center opacity-40">
+<p class="font-headline text-xs italic text-on-surface-variant max-w-[200px] mx-auto leading-relaxed">
+                "The quiet mind is a powerful tool for clarity."
+            </p>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-6 pb-8 pt-4 bg-[#131315]/80 backdrop-blur-xl z-50 rounded-t-3xl border-t border-white/5 shadow-2xl">
+<button class="flex flex-col items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-xl p-3 active:scale-[0.98] transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-indigo-300 transition-all active:scale-[0.98] duration-200">
+<span class="material-symbols-outlined">calendar_today</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-indigo-300 transition-all active:scale-[0.98] duration-200">
+<span class="material-symbols-outlined">analytics</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-3 hover:text-indigo-300 transition-all active:scale-[0.98] duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</nav>
+</body></html>

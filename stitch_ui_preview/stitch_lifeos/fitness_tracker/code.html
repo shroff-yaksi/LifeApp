@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LifeApp — Fitness Protocol</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-container": "#42447b",
+              "primary-fixed-dim": "#c0c1ff",
+              "on-tertiary": "#4f2500",
+              "primary-container": "#8083ff",
+              "inverse-primary": "#494bd6",
+              "secondary-fixed": "#e1e0ff",
+              "on-error": "#690005",
+              "surface": "#131315",
+              "background": "#131315",
+              "on-primary": "#1000a9",
+              "on-tertiary-container": "#452000",
+              "error": "#ffb4ab",
+              "surface-container-lowest": "#0e0e10",
+              "primary": "#c0c1ff",
+              "on-surface": "#e5e1e4",
+              "on-surface-variant": "#c7c4d7",
+              "surface-tint": "#c0c1ff",
+              "error-container": "#93000a",
+              "tertiary": "#ffb783",
+              "primary-fixed": "#e1e0ff",
+              "on-tertiary-fixed-variant": "#703700",
+              "on-secondary-fixed": "#13144a",
+              "on-primary-container": "#0d0096",
+              "surface-variant": "#353437",
+              "on-primary-fixed": "#07006c",
+              "tertiary-fixed": "#ffdcc5",
+              "on-tertiary-fixed": "#301400",
+              "inverse-on-surface": "#313032",
+              "surface-dim": "#131315",
+              "outline-variant": "#464554",
+              "on-primary-fixed-variant": "#2f2ebe",
+              "surface-container": "#201f22",
+              "inverse-surface": "#e5e1e4",
+              "tertiary-container": "#d97721",
+              "outline": "#908fa0",
+              "surface-container-high": "#2a2a2c",
+              "on-secondary": "#292a60",
+              "secondary": "#c0c1ff",
+              "on-error-container": "#ffdad6",
+              "secondary-fixed-dim": "#c0c1ff",
+              "tertiary-fixed-dim": "#ffb783",
+              "surface-bright": "#39393b",
+              "surface-container-highest": "#353437",
+              "surface-container-low": "#1c1b1d",
+              "on-secondary-fixed-variant": "#404178",
+              "on-secondary-container": "#b2b3f2",
+              "on-background": "#e5e1e4"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .activity-pulse {
+            height: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .activity-pulse-needle {
+            position: absolute;
+            height: 100%;
+            background: #6366f1;
+            box-shadow: 0 0 8px #6366f1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-[#131315] sticky top-0 z-50 shadow-[0_32px_32px_-12px_rgba(13,0,150,0.06)] h-16 flex justify-between items-center w-full px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-primary/20">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a man with minimalist aesthetic and sharp lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoWBJxFqI94LoyaVBus9xCO9u-x63CYFxSuosmA1Cj31WnNnIBIBS75BKqjk0WdvLRmsFs02tsg8VZazX1PTd71se3174CvyG8RrBuA6NSUaCBNJPfgKWTcvkb1e0yy8_eRl2cTuyWZ7KEceOwN4N-i0fHEmSVsE1Z1cbHGTzBB4a_kHhjjKf388UxCwXNdICtZXcvxaaDjJS0sBpTO9XRYSt6N5YhMUV-ARQ4_ALDhGv3ftgsKCMvk5U2UWM9sFM3TUAzTrVKU9E"/>
+</div>
+<span class="font-headline font-extrabold tracking-[-0.02em] text-xl text-[#6366f1]">LifeApp</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-400 hover:bg-[#2a2a2c] p-2 rounded-full transition-colors active:scale-95">notifications</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-8 pb-32 grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Sidebar (Desktop) -->
+<aside class="hidden md:flex md:col-span-3 flex-col gap-2 h-fit sticky top-24">
+<div class="mb-6 px-4">
+<h2 class="font-headline font-bold text-lg text-primary">Fitness</h2>
+<p class="text-xs font-label uppercase tracking-widest text-outline">Biological Protocol</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-lg hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-headline font-bold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-lg hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-headline font-bold">Schedule</span>
+</a>
+<a class="flex items-center gap-3 bg-[#6366f1]/20 text-[#c0c1ff] px-4 py-3 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-headline font-bold">Fitness</span>
+</a>
+<a class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-lg hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-headline font-bold">Learning</span>
+</a>
+<a class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-lg hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-headline font-bold">Settings</span>
+</a>
+</nav>
+</aside>
+<!-- Content Canvas -->
+<section class="md:col-span-9 space-y-8">
+<!-- Biometric Insights (Weight & Sleep) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Weight Card -->
+<div class="bg-surface-container-low rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Biometrics</p>
+<h3 class="font-headline font-bold text-xl text-on-surface">Weight</h3>
+</div>
+<button class="text-xs font-label font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors">+ Log</button>
+</div>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-4xl font-headline font-extrabold text-[#4ade80]">75.2<span class="text-lg font-medium ml-1">kg</span></span>
+<span class="text-sm text-outline">Target: 72kg</span>
+</div>
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-[#4ade80] text-sm">trending_down</span>
+<span class="text-sm text-[#4ade80] font-medium">-0.8kg this week</span>
+</div>
+<!-- Simplified Green Line Chart -->
+<div class="h-40 w-full flex items-end gap-1.5 mt-4">
+<div class="w-full h-24 bg-gradient-to-t from-[#4ade80]/20 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#4ade80] shadow-[0_0_10px_#4ade80]"></div>
+</div>
+<div class="w-full h-20 bg-gradient-to-t from-[#4ade80]/15 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#4ade80] opacity-80"></div>
+</div>
+<div class="w-full h-28 bg-gradient-to-t from-[#4ade80]/25 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#4ade80] shadow-[0_0_12px_#4ade80]"></div>
+</div>
+<div class="w-full h-22 bg-gradient-to-t from-[#4ade80]/20 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#4ade80] opacity-90"></div>
+</div>
+</div>
+</div>
+<!-- Sleep Card -->
+<div class="bg-surface-container-low rounded-xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-[10px] font-label uppercase tracking-widest text-outline mb-1">Recovery</p>
+<h3 class="font-headline font-bold text-xl text-on-surface">Sleep</h3>
+</div>
+<button class="text-xs font-label font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors">+ Log</button>
+</div>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-4xl font-headline font-extrabold text-[#c0c1ff]">7h 45m</span>
+<span class="text-sm text-outline">Target: 8h</span>
+</div>
+<div class="w-full bg-surface-container-highest h-2 rounded-full mb-8 overflow-hidden">
+<div class="bg-[#6366f1] h-full w-[96%] shadow-[0_0_10px_#6366f1]"></div>
+</div>
+<!-- Purple Line Chart -->
+<div class="h-40 w-full flex items-end gap-1.5 mt-4">
+<div class="w-full h-32 bg-gradient-to-t from-[#6366f1]/20 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#6366f1] shadow-[0_0_10px_#6366f1]"></div>
+</div>
+<div class="w-full h-24 bg-gradient-to-t from-[#6366f1]/15 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#6366f1] opacity-80"></div>
+</div>
+<div class="w-full h-36 bg-gradient-to-t from-[#6366f1]/25 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#6366f1] shadow-[0_0_12px_#6366f1]"></div>
+</div>
+<div class="w-full h-28 bg-gradient-to-t from-[#6366f1]/20 to-transparent rounded-t-sm relative">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-[#6366f1] opacity-90"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Meals and Deviations (Asymmetric Layout) -->
+<div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+<!-- Today's Meals Card -->
+<div class="xl:col-span-3 bg-surface-container-low rounded-xl p-6">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-primary">restaurant</span>
+<h3 class="font-headline font-bold text-xl text-on-surface">Today's Meals</h3>
+</div>
+<div class="space-y-6">
+<!-- Meal Row 1 -->
+<div class="flex flex-col md:flex-row md:items-center gap-4 group">
+<div class="md:w-32">
+<span class="text-xs font-label uppercase tracking-widest text-outline block">Breakfast</span>
+<span class="text-sm font-bold text-on-surface">9:00 AM</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none border-b border-outline-variant/30 focus:border-primary focus:ring-0 transition-all text-on-surface placeholder:text-outline/40 pb-2" placeholder="What did you eat?" type="text"/>
+</div>
+</div>
+<!-- Meal Row 2 -->
+<div class="flex flex-col md:flex-row md:items-center gap-4 group">
+<div class="md:w-32">
+<span class="text-xs font-label uppercase tracking-widest text-outline block">Lunch</span>
+<span class="text-sm font-bold text-on-surface">1:00 PM</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none border-b border-outline-variant/30 focus:border-primary focus:ring-0 transition-all text-on-surface placeholder:text-outline/40 pb-2" placeholder="What did you eat?" type="text"/>
+</div>
+</div>
+<!-- Meal Row 3 -->
+<div class="flex flex-col md:flex-row md:items-center gap-4 group">
+<div class="md:w-32">
+<span class="text-xs font-label uppercase tracking-widest text-outline block">Snack</span>
+<span class="text-sm font-bold text-on-surface">5:00 PM</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none border-b border-outline-variant/30 focus:border-primary focus:ring-0 transition-all text-on-surface placeholder:text-outline/40 pb-2" placeholder="What did you eat?" type="text"/>
+</div>
+</div>
+<!-- Meal Row 4 -->
+<div class="flex flex-col md:flex-row md:items-center gap-4 group">
+<div class="md:w-32">
+<span class="text-xs font-label uppercase tracking-widest text-outline block">Dinner</span>
+<span class="text-sm font-bold text-on-surface">8:30 PM</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none border-b border-outline-variant/30 focus:border-primary focus:ring-0 transition-all text-on-surface placeholder:text-outline/40 pb-2" placeholder="What did you eat?" type="text"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Deviations Card -->
+<div class="xl:col-span-2 bg-surface-container-low rounded-xl p-6">
+<div class="flex justify-between items-start mb-8">
+<h3 class="font-headline font-bold text-xl text-on-surface">Deviations</h3>
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors">add_circle</button>
+</div>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Alcohol</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Extra Snack</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Off-Diet</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Junk Food</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Late Night Meal</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Sugar Intake</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/20 bg-surface-container-highest/30 text-xs font-medium hover:border-error/40 transition-all">Soda</button>
+</div>
+<div class="mt-8 p-4 rounded-xl bg-surface-container/50 border border-outline-variant/10">
+<p class="text-[10px] font-label uppercase tracking-[0.1em] text-outline mb-2">Weekly Summary</p>
+<div class="flex justify-between items-end">
+<span class="text-3xl font-headline font-extrabold text-on-surface">03</span>
+<span class="text-xs text-error font-bold">+1 vs last week</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Cigarettes Counter (From Dashboard) -->
+<div class="bg-surface-container-low rounded-xl p-6 border-l-4 border-tertiary">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">smoke_free</span>
+</div>
+<div>
+<h3 class="font-headline font-bold text-lg text-on-surface">Cigarettes Counter</h3>
+<p class="text-sm text-outline">Day 12 of Tobacco-Free Protocol</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right">
+<span class="text-2xl font-headline font-extrabold text-on-surface">0</span>
+<span class="text-xs font-label text-outline block uppercase tracking-tighter">Consumed Today</span>
+</div>
+<button class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface hover:bg-surface-container transition-all active:scale-90">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Activity Pulse Component -->
+<div class="mt-6">
+<div class="activity-pulse rounded-full">
+<div class="activity-pulse-needle w-full" style="background: #ffb783; box-shadow: 0 0 12px #ffb783;"></div>
+</div>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] font-label text-outline">PROTOCOL STREAK</span>
+<span class="text-[10px] font-label text-tertiary font-bold">100% CLEAN</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 pb-safe bg-[#131315]/80 backdrop-blur-xl z-50 border-t border-white/5 shadow-2xl">
+<button class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-[#c0c1ff] active:scale-90 transition-all">
+<span class="material-symbols-outlined">home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-[#c0c1ff] active:scale-90 transition-all">
+<span class="material-symbols-outlined">calendar_month</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#6366f1]/10 text-[#c0c1ff] rounded-xl p-2 active:scale-90 transition-all">
+<span class="material-symbols-outlined">fitness_center</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-[#c0c1ff] active:scale-90 transition-all">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<button class="flex flex-col items-center justify-center text-slate-500 p-2 hover:text-[#c0c1ff] active:scale-90 transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx expo:*)",
+      "Bash(unzip -o stitch_lifeos.zip -d stitch_ui_preview)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/shroffyaksi/Desktop/LifeApp/**)",
+      "Bash(done)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/learning.tsx\")",
+      "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/skills.tsx\")",
+      "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/analytics.tsx\")",
+      "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/settings.tsx\")",
+      "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/_layout.tsx\")",
+      "Bash(npx qrcode-terminal:*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

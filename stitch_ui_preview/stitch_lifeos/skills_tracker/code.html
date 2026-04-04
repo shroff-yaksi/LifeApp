@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Protocol: Skills | Obsidian Life Protocol</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface-variant": "#c7c4d7",
+                        "tertiary-container": "#d97721",
+                        "surface-container-high": "#2a2a2c",
+                        "secondary-fixed": "#e1e0ff",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "secondary": "#c0c1ff",
+                        "outline": "#908fa0",
+                        "on-error-container": "#ffdad6",
+                        "background": "#131315",
+                        "tertiary": "#ffb783",
+                        "surface": "#131315",
+                        "on-tertiary-container": "#452000",
+                        "on-secondary-container": "#b2b3f2",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "surface-container": "#201f22",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-primary-container": "#0d0096",
+                        "inverse-on-surface": "#313032",
+                        "on-secondary-fixed": "#13144a",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-container-low": "#1c1b1d",
+                        "secondary-container": "#42447b",
+                        "primary": "#c0c1ff",
+                        "on-tertiary": "#4f2500",
+                        "on-error": "#690005",
+                        "on-background": "#e5e1e4",
+                        "primary-fixed": "#e1e0ff",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#c0c1ff",
+                        "surface-container-highest": "#353437",
+                        "on-secondary": "#292a60",
+                        "on-primary": "#1000a9",
+                        "surface-variant": "#353437",
+                        "primary-container": "#8083ff",
+                        "outline-variant": "#464554",
+                        "on-surface": "#e5e1e4",
+                        "surface-bright": "#39393b",
+                        "tertiary-fixed": "#ffdcc5",
+                        "inverse-surface": "#e5e1e4",
+                        "on-secondary-fixed-variant": "#404178",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "on-tertiary-fixed": "#301400",
+                        "on-primary-fixed": "#07006c",
+                        "inverse-primary": "#494bd6",
+                        "surface-dim": "#131315",
+                        "on-primary-fixed-variant": "#2f2ebe"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "1.5rem", // Customized to 24px as per design system outer
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #131315;
+            color: #e5e1e4;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-header {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .activity-pulse-container {
+            height: 4px;
+            background-color: #353437;
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+        .activity-pulse-needle {
+            height: 100%;
+            background-color: #facc15;
+            box-shadow: 0 0 8px #facc15;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-[#131315] shadow-[0_32px_32px_rgba(13,0,150,0.06)]">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional looking individual with warm cinematic lighting and a neutral studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxJPOzMsD_wMLebuw9KniHSCVQLRhFPXEgjCREUabKC5kzEWdO997aegYt8EEzCxLoQ0zxVNDclmZOxOHnDfxj9U8cD1_26NB220UooxPzdDPKV4zqSWh_dOMJUgX_rBkoV7B-hgUN9NIztIY3MC8jw0RB0NA93mLUtP97rMcdeQKz4JsP411ZsM55e5130E-NVDN_fF5vtV3INcuP-AKw0aNlw-w-0XYX2VmJAG3XHUxGxTFMaQQg6GQsM-8D343qRq0sIy8Pry0"/>
+</div>
+</div>
+<h1 class="font-['Plus_Jakarta_Sans'] font-extrabold tracking-tight text-lg text-white">Protocol: Skills</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-[#2a2a2c] transition-colors active:scale-[0.98] duration-200">
+<span class="material-symbols-outlined text-slate-500" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="mt-20 px-6 max-w-5xl mx-auto space-y-10">
+<!-- Weekly Progress Section -->
+<section class="space-y-4">
+<div class="flex items-end justify-between">
+<div>
+<span class="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400 font-label block mb-1">Performance Matrix</span>
+<h2 class="editorial-header text-3xl text-white">Weekly Progress</h2>
+</div>
+<div class="text-right">
+<span class="text-sm font-medium text-on-surface-variant">Avg. 4.2h / day</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-8 flex items-end justify-between gap-4 h-48">
+<!-- Guitar -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-surface-container-highest rounded-t-lg relative overflow-hidden" style="height: 60%;">
+<div class="absolute bottom-0 w-full bg-[#facc15] shadow-[0_0_20px_rgba(250,204,21,0.3)] transition-all duration-500" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">GUI</span>
+</div>
+<!-- Kathak -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-surface-container-highest rounded-t-lg relative overflow-hidden" style="height: 85%;">
+<div class="absolute bottom-0 w-full bg-[#facc15] shadow-[0_0_20px_rgba(250,204,21,0.3)] transition-all duration-500" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">KAT</span>
+</div>
+<!-- Cooking -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-surface-container-highest rounded-t-lg relative overflow-hidden" style="height: 45%;">
+<div class="absolute bottom-0 w-full bg-[#facc15] shadow-[0_0_20px_rgba(250,204,21,0.3)] transition-all duration-500" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">COO</span>
+</div>
+<!-- Sports -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-surface-container-highest rounded-t-lg relative overflow-hidden" style="height: 70%;">
+<div class="absolute bottom-0 w-full bg-[#facc15] shadow-[0_0_20px_rgba(250,204,21,0.3)] transition-all duration-500" style="height: 100%;"></div>
+</div>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">SPO</span>
+</div>
+</div>
+</section>
+<!-- Skill Grid -->
+<section class="space-y-6">
+<h2 class="editorial-header text-3xl text-white">Active Pursuits</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Skill Card: Guitar -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-xl font-bold text-white mb-1">Guitar 🎸</h3>
+<p class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Level 4: Advanced</p>
+</div>
+<div class="text-right">
+<div class="text-3xl font-extrabold text-[#facc15]">124h</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Total Accrued</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex justify-between text-[11px] mb-2 font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Weekly Target: 8h</span>
+<span class="text-[#facc15]">6.5h logged</span>
+</div>
+<div class="activity-pulse-container">
+<div class="activity-pulse-needle" style="width: 81%;"></div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl bg-surface-container-highest text-sm font-bold text-white transition-all active:scale-[0.95] hover:bg-surface-container-high border border-white/5">Rate Skill</button>
+<button class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-br from-[#facc15] to-[#ca8a04] text-black text-sm font-bold transition-all active:scale-[0.95] shadow-lg shadow-[#facc15]/10">Log Practice</button>
+</div>
+</div>
+<!-- Skill Card: Kathak -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-xl font-bold text-white mb-1">Kathak 💃</h3>
+<p class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Level 3: Intermediate</p>
+</div>
+<div class="text-right">
+<div class="text-3xl font-extrabold text-[#facc15]">88h</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Total Accrued</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex justify-between text-[11px] mb-2 font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Weekly Target: 10h</span>
+<span class="text-[#facc15]">9.2h logged</span>
+</div>
+<div class="activity-pulse-container">
+<div class="activity-pulse-needle" style="width: 92%;"></div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl bg-surface-container-highest text-sm font-bold text-white transition-all active:scale-[0.95] border border-white/5">Rate Skill</button>
+<button class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-br from-[#facc15] to-[#ca8a04] text-black text-sm font-bold transition-all active:scale-[0.95]">Log Practice</button>
+</div>
+</div>
+<!-- Skill Card: Cooking -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-xl font-bold text-white mb-1">Cooking 🍳</h3>
+<p class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Level 2: Casual</p>
+</div>
+<div class="text-right">
+<div class="text-3xl font-extrabold text-[#facc15]">42h</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Total Accrued</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex justify-between text-[11px] mb-2 font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Weekly Target: 5h</span>
+<span class="text-[#facc15]">2.1h logged</span>
+</div>
+<div class="activity-pulse-container">
+<div class="activity-pulse-needle" style="width: 42%;"></div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl bg-surface-container-highest text-sm font-bold text-white transition-all active:scale-[0.95] border border-white/5">Rate Skill</button>
+<button class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-br from-[#facc15] to-[#ca8a04] text-black text-sm font-bold transition-all active:scale-[0.95]">Log Practice</button>
+</div>
+</div>
+<!-- Skill Card: Sports -->
+<div class="bg-surface-container rounded-xl p-6 border border-white/5 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-xl font-bold text-white mb-1">Sports ⚽</h3>
+<p class="text-xs text-on-surface-variant font-medium uppercase tracking-wider">Level 5: Elite</p>
+</div>
+<div class="text-right">
+<div class="text-3xl font-extrabold text-[#facc15]">256h</div>
+<div class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Total Accrued</div>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex justify-between text-[11px] mb-2 font-bold uppercase tracking-widest text-on-surface-variant">
+<span>Weekly Target: 12h</span>
+<span class="text-[#facc15]">11.5h logged</span>
+</div>
+<div class="activity-pulse-container">
+<div class="activity-pulse-needle" style="width: 96%;"></div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl bg-surface-container-highest text-sm font-bold text-white transition-all active:scale-[0.95] border border-white/5">Rate Skill</button>
+<button class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-br from-[#facc15] to-[#ca8a04] text-black text-sm font-bold transition-all active:scale-[0.95]">Log Practice</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Practice Logs -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="editorial-header text-3xl text-white">Recent Practice</h2>
+<button class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300">View Full Log</button>
+</div>
+<div class="bg-surface-container rounded-xl border border-white/5 divide-y divide-white/5">
+<!-- Log Item 1 -->
+<div class="p-5 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-[#facc15]/10 flex items-center justify-center text-[#facc15] font-bold text-lg">G</div>
+<div>
+<div class="text-sm font-bold text-white">Guitar Drills</div>
+<div class="text-xs text-on-surface-variant">Scale progression and fingerpicking...</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-[#facc15]">45m</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-tighter">Oct 12, 08:30</div>
+</div>
+</div>
+<!-- Log Item 2 -->
+<div class="p-5 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-[#facc15]/10 flex items-center justify-center text-[#facc15] font-bold text-lg">K</div>
+<div>
+<div class="text-sm font-bold text-white">Kathak Core</div>
+<div class="text-xs text-on-surface-variant">Footwork intensity focus...</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-[#facc15]">1.5h</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-tighter">Oct 11, 17:15</div>
+</div>
+</div>
+<!-- Log Item 3 -->
+<div class="p-5 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-[#facc15]/10 flex items-center justify-center text-[#facc15] font-bold text-lg">S</div>
+<div>
+<div class="text-sm font-bold text-white">Football Training</div>
+<div class="text-xs text-on-surface-variant">Local tournament qualifiers...</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-sm font-bold text-[#facc15]">2h</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-tighter">Oct 10, 16:00</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#131315]/80 backdrop-blur-xl border-t border-white/5">
+<!-- Focus -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="target">target</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Focus</span>
+</a>
+<!-- Skills (Active) -->
+<a class="flex flex-col items-center justify-center text-indigo-400 bg-indigo-500/10 rounded-xl px-4 py-2 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="extension" style="font-variation-settings: 'FILL' 1;">extension</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Skills</span>
+</a>
+<!-- Log -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="edit_note">edit_note</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Log</span>
+</a>
+<!-- Archive -->
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="inventory_2">inventory_2</span>
+<span class="font-['Inter'] text-[10px] font-medium uppercase tracking-widest">Archive</span>
+</a>
+</nav>
+</body></html>
