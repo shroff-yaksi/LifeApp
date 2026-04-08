@@ -1,54 +1,69 @@
 export const Colors = {
-  // Surface hierarchy — Obsidian Life Protocol
-  bg: '#131315',               // surface / base
-  sidebarBg: '#0e0e10',        // surface-container-lowest
-  card: '#1c1b1d',             // surface-container-low
-  cardHover: '#201f22',        // surface-container
-  surface: '#201f22',          // surface-container
-  surfaceHigh: '#2a2a2c',      // surface-container-high
-  surfaceHighest: '#353437',   // surface-container-highest
+  // Surface hierarchy
+  bg: '#0f0f11',
+  sidebarBg: '#0a0a0c',
+  card: '#18181b',
+  cardHover: '#1e1e22',
+  surface: '#1e1e22',
+  surfaceHigh: '#252529',
+  surfaceHighest: '#2f2f35',
 
-  // Ghost borders (suggestion only, not dividers)
-  border: 'rgba(70,69,84,0.2)',
-  borderHover: 'rgba(70,69,84,0.4)',
+  // Ghost borders
+  border: 'rgba(255,255,255,0.07)',
+  borderHover: 'rgba(255,255,255,0.14)',
 
   // Typography
-  text: '#e5e1e4',             // on-surface
-  textSecondary: '#c7c4d7',    // on-surface-variant
-  textMuted: '#908fa0',        // outline
+  text: '#f1eef5',
+  textSecondary: '#c4c0d8',
+  textMuted: '#8a8898',
 
   // Primary accent — Indigo/Lavender
-  accent: '#6366f1',           // indigo-500
-  accentLight: '#c0c1ff',      // primary lavender
-  accentGlow: 'rgba(99,102,241,0.2)',
-  accentBg: 'rgba(99,102,241,0.1)',
+  accent: '#6366f1',
+  accentLight: '#a5b4fc',
+  accentGlow: 'rgba(99,102,241,0.25)',
+  accentBg: 'rgba(99,102,241,0.12)',
 
-  // Semantic palette
-  green: '#4ade80',
-  greenBg: 'rgba(74,222,128,0.08)',
-  red: '#ffb4ab',              // error token
-  redBg: 'rgba(255,180,171,0.08)',
-  orange: '#ffb783',           // tertiary
-  orangeBg: 'rgba(255,183,131,0.08)',
-  purple: '#c0c1ff',
-  purpleBg: 'rgba(192,193,255,0.08)',
+  // Semantic palette — more vibrant
+  green: '#22c55e',
+  greenBg: 'rgba(34,197,94,0.12)',
+  red: '#f87171',
+  redBg: 'rgba(248,113,113,0.12)',
+  orange: '#fb923c',
+  orangeBg: 'rgba(251,146,60,0.12)',
+  purple: '#a78bfa',
+  purpleBg: 'rgba(167,139,250,0.12)',
   pink: '#f472b6',
-  pinkBg: 'rgba(244,114,182,0.08)',
-  yellow: '#facc15',
-  yellowBg: 'rgba(250,204,21,0.08)',
+  pinkBg: 'rgba(244,114,182,0.12)',
+  yellow: '#fbbf24',
+  yellowBg: 'rgba(251,191,36,0.12)',
   cyan: '#22d3ee',
-  cyanBg: 'rgba(34,211,238,0.08)',
+  cyanBg: 'rgba(34,211,238,0.12)',
+  teal: '#2dd4bf',
+  tealBg: 'rgba(45,212,191,0.12)',
+};
+
+// Per-tab signature colors
+export const TAB_COLORS: Record<string, string> = {
+  index:     '#6366f1', // indigo
+  schedule:  '#22d3ee', // cyan
+  fitness:   '#22c55e', // green
+  learning:  '#fb923c', // orange
+  skills:    '#fbbf24', // yellow
+  journal:   '#f472b6', // pink
+  finance:   '#2dd4bf', // teal
+  analytics: '#a78bfa', // purple
+  settings:  '#94a3b8', // slate
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  fitness: '#4ade80',
+  fitness: '#22c55e',
   work: '#6366f1',
-  learning: '#ffb783',
+  learning: '#fb923c',
   personal: '#f472b6',
   meal: '#22d3ee',
-  sleep: '#c0c1ff',
+  sleep: '#a78bfa',
   date: '#f472b6',
-  skill: '#facc15',
+  skill: '#fbbf24',
 };
 
 export const LEARNING_ROTATION: Record<number, string[]> = {
@@ -72,6 +87,11 @@ export const DEFAULT_GOALS = {
   weeklyWater: 56,
   weeklySleepAvg: 7.25,
   weeklySkillHours: 8,
+  weeklyGymHours: 5,
+  weeklyWalkHours: 7,
+  weeklySwimHours: 3,
+  weeklyJournalDays: 7,
+  weeklyMindfulDays: 7,
 };
 
 export const DEFAULT_REMINDER_SETTINGS = {

@@ -8,10 +8,19 @@ type Props = {
   height?: number;
 };
 
-export function ProgressBar({ progress, color = Colors.accent, height = 2 }: Props) {
+export function ProgressBar({ progress, color = Colors.accent, height = 6 }: Props) {
   return (
     <View style={[styles.track, { height }]}>
-      <View style={[styles.fill, { width: `${Math.min(100, Math.max(0, progress))}%`, backgroundColor: color, height }]} />
+      <View
+        style={[
+          styles.fill,
+          {
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            backgroundColor: color,
+            height,
+          },
+        ]}
+      />
     </View>
   );
 }

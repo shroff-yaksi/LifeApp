@@ -5,19 +5,26 @@ import { Colors } from '../constants/theme';
 type Props = {
   title?: string;
   badge?: string;
+  badgeColor?: string;
   headerRight?: React.ReactNode;
   children: React.ReactNode;
   style?: ViewStyle;
+  accentColor?: string;
 };
 
-export function Card({ title, badge, headerRight, children, style }: Props) {
+export function Card({ title, badge, badgeColor, headerRight, children, style, accentColor }: Props) {
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, accentColor && { borderLeftColor: accentColor, borderLeftWidth: 3 }, style]}>
       {(title || headerRight) && (
         <View style={styles.header}>
           <View style={styles.titleRow}>
+            {accentColor && <View style={[styles.dot, { backgroundColor: accentColor }]} />}
             {title ? <Text style={styles.title}>{title}</Text> : null}
-            {badge ? <Text style={styles.badge}>{badge}</Text> : null}
+            {badge ? (
+              <View style={[styles.badgeContainer, { backgroundColor: (badgeColor || Colors.orange) + '20' }]}>
+                <Text style={[styles.badge, { color: badgeColor || Colors.orange }]}>{badge}</Text>
+              </View>
+            ) : null}
           </View>
           {headerRight}
         </View>
@@ -31,8 +38,10 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card,
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     marginBottom: 12,
+    borderLeftWidth: 0,
+    borderLeftColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -45,20 +54,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   title: {
     color: Colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  badge: {
-    color: Colors.orange,
-    fontSize: 10,
-    fontWeight: '700',
-    backgroundColor: Colors.orangeBg,
+  badgeContainer: {
+    borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
+  },
+  badge: {
+    fontSize: 10,
+    fontWeight: '800',
     overflow: 'hidden',
   },
 });

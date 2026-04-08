@@ -38,6 +38,8 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 15,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
 });

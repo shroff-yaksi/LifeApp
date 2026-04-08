@@ -1,34 +1,38 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
-import { Colors } from '../../src/constants/theme';
+import { Colors, TAB_COLORS } from '../../src/constants/theme';
+
+const TAB_EMOJIS: Record<string, string> = {
+  Dashboard: '⚡',
+  Schedule:  '📅',
+  Fitness:   '💪',
+  Learning:  '📚',
+  Skills:    '🎸',
+  Settings:  '⚙️',
+};
+
+const TAB_ROUTES: Record<string, string> = {
+  Dashboard: 'index',
+  Schedule:  'schedule',
+  Fitness:   'fitness',
+  Learning:  'learning',
+  Skills:    'skills',
+  Settings:  'settings',
+};
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Dashboard: '⊞',
-    Schedule: '◫',
-    Fitness: '◈',
-    Learning: '◉',
-    Skills: '◎',
-    Journal: '▦',
-    Finance: '◧',
-    Analytics: '▤',
-    Settings: '⊙',
-  };
+  const route = TAB_ROUTES[label];
+  const color = TAB_COLORS[route] || Colors.accent;
   return (
     <View style={{
-      width: 36,
-      height: 36,
-      borderRadius: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: focused ? 'rgba(99,102,241,0.15)' : 'transparent',
+      backgroundColor: focused ? color + '20' : 'transparent',
     }}>
-      <Text style={{
-        fontSize: 18,
-        color: focused ? Colors.accentLight : Colors.textMuted,
-      }}>
-        {icons[label] || '•'}
-      </Text>
+      <Text style={{ fontSize: 19 }}>{TAB_EMOJIS[label] || '•'}</Text>
     </View>
   );
 }
@@ -39,17 +43,18 @@ export default function TabLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.bg, elevation: 0, shadowOpacity: 0 },
         headerTintColor: Colors.accentLight,
-        headerTitleStyle: { fontWeight: '800', fontSize: 16, letterSpacing: -0.3, color: Colors.accent },
+        headerTitleStyle: { fontWeight: '800', fontSize: 17, letterSpacing: -0.3, color: Colors.text },
         tabBarStyle: {
-          backgroundColor: 'rgba(19,19,21,0.95)',
-          borderTopColor: 'rgba(255,255,255,0.05)',
+          backgroundColor: Colors.card,
+          borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 74,
-          paddingTop: 8,
+          height: 78,
+          paddingTop: 6,
+          paddingBottom: 6,
         },
-        tabBarActiveTintColor: Colors.accentLight,
+        tabBarActiveTintColor: Colors.text,
         tabBarInactiveTintColor: Colors.textMuted,
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '700', marginTop: 2, letterSpacing: 0.3 },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: '700', marginTop: 1, letterSpacing: 0.2 },
       }}
     >
       <Tabs.Screen
@@ -57,6 +62,7 @@ export default function TabLayout() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ focused }) => <TabIcon label="Dashboard" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.index,
         }}
       />
       <Tabs.Screen
@@ -64,6 +70,7 @@ export default function TabLayout() {
         options={{
           title: 'Schedule',
           tabBarIcon: ({ focused }) => <TabIcon label="Schedule" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.schedule,
         }}
       />
       <Tabs.Screen
@@ -71,6 +78,7 @@ export default function TabLayout() {
         options={{
           title: 'Fitness',
           tabBarIcon: ({ focused }) => <TabIcon label="Fitness" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.fitness,
         }}
       />
       <Tabs.Screen
@@ -78,6 +86,7 @@ export default function TabLayout() {
         options={{
           title: 'Learning',
           tabBarIcon: ({ focused }) => <TabIcon label="Learning" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.learning,
         }}
       />
       <Tabs.Screen
@@ -85,27 +94,7 @@ export default function TabLayout() {
         options={{
           title: 'Skills',
           tabBarIcon: ({ focused }) => <TabIcon label="Skills" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="journal"
-        options={{
-          title: 'Journal',
-          tabBarIcon: ({ focused }) => <TabIcon label="Journal" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="finance"
-        options={{
-          title: 'Finance',
-          tabBarIcon: ({ focused }) => <TabIcon label="Finance" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: 'Analytics',
-          tabBarIcon: ({ focused }) => <TabIcon label="Analytics" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.skills,
         }}
       />
       <Tabs.Screen
@@ -113,8 +102,13 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ focused }) => <TabIcon label="Settings" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.settings,
         }}
       />
+      {/* Hidden routes — not in tab bar */}
+      <Tabs.Screen name="analytics" options={{ href: null }} />
+      <Tabs.Screen name="journal" options={{ href: null }} />
+      <Tabs.Screen name="finance" options={{ href: null }} />
     </Tabs>
   );
 }

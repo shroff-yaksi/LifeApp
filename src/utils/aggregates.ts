@@ -10,12 +10,17 @@ export type WeeklyStats = {
   totalWater: number;
   avgSleep: number;
   skillHours: number;
+  gymHours: number;
+  walkHours: number;
+  swimHours: number;
   journalDays: number;
+  mindfulDays: number;
 };
 
 export async function getWeeklyAggregates(weekStart: string): Promise<WeeklyStats> {
   let habitTotal = 0, habitDone = 0, gymCount = 0, studyHours = 0, totalCigs = 0, totalWater = 0;
-  let sleepTotal = 0, sleepDays = 0, skillHours = 0, journalDays = 0;
+  let sleepTotal = 0, sleepDays = 0, skillHours = 0;
+  let gymHours = 0, walkHours = 0, swimHours = 0, journalDays = 0, mindfulDays = 0;
   const habits = await getData<string[]>('habits', DEFAULT_HABITS);
 
   for (let i = 0; i < 7; i++) {
@@ -43,15 +48,21 @@ export async function getWeeklyAggregates(weekStart: string): Promise<WeeklyStat
     const sLogs = await getData<any[]>('skillLogs', []);
     skillHours += sLogs.filter((l: any) => l.date === ds).reduce((s: number, l: any) => s + l.hours, 0);
 
-    const je = await getData<any>('journal_' + ds, null);
-    if (je && (je.well || je.improve || je.learned || je.free)) journalDays++;
+    // Activity log
+    const act = await getData<any>('activityLog_' + ds, {});
+    gymHours += act.gymHours || 0;
+    walkHours += act.walkHours || 0;
+    swimHours += act.swimHours || 0;
+    if (act.journalled) journalDays++;
+    if (act.mindful) mindfulDays++;
   }
 
   return {
     habitPct: habitTotal ? Math.round((habitDone / habitTotal) * 100) : 0,
     gymCount, studyHours, totalCigs, totalWater,
     avgSleep: sleepDays ? sleepTotal / sleepDays : 0,
-    skillHours, journalDays,
+    skillHours,
+    gymHours, walkHours, swimHours, journalDays, mindfulDays,
   };
 }
 
