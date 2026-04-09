@@ -1,16 +1,16 @@
 export const Colors = {
   // Surface hierarchy
-  bg: '#0f0f11',
+  bg: '#0d0d10',
   sidebarBg: '#0a0a0c',
-  card: '#18181b',
-  cardHover: '#1e1e22',
-  surface: '#1e1e22',
-  surfaceHigh: '#252529',
-  surfaceHighest: '#2f2f35',
+  card: '#1a1a1f',
+  cardHover: '#202027',
+  surface: '#202027',
+  surfaceHigh: '#27272e',
+  surfaceHighest: '#32323b',
 
   // Ghost borders
-  border: 'rgba(255,255,255,0.07)',
-  borderHover: 'rgba(255,255,255,0.14)',
+  border: 'rgba(255,255,255,0.09)',
+  borderHover: 'rgba(255,255,255,0.16)',
 
   // Typography
   text: '#f1eef5',

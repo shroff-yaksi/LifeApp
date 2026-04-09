@@ -14,14 +14,22 @@ type Props = {
 
 export function Card({ title, badge, badgeColor, headerRight, children, style, accentColor }: Props) {
   return (
-    <View style={[styles.card, accentColor && { borderLeftColor: accentColor, borderLeftWidth: 3 }, style]}>
+    <View style={[
+      styles.card,
+      accentColor
+        ? { borderColor: Colors.border, borderTopColor: accentColor, borderTopWidth: 2 }
+        : {},
+      style,
+    ]}>
       {(title || headerRight) && (
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            {accentColor && <View style={[styles.dot, { backgroundColor: accentColor }]} />}
+            {accentColor && (
+              <View style={[styles.dot, { backgroundColor: accentColor, shadowColor: accentColor, shadowOpacity: 0.8, shadowRadius: 4 }]} />
+            )}
             {title ? <Text style={styles.title}>{title}</Text> : null}
             {badge ? (
-              <View style={[styles.badgeContainer, { backgroundColor: (badgeColor || Colors.orange) + '20' }]}>
+              <View style={[styles.badgeContainer, { backgroundColor: (badgeColor || Colors.orange) + '22' }]}>
                 <Text style={[styles.badge, { color: badgeColor || Colors.orange }]}>{badge}</Text>
               </View>
             ) : null}
@@ -37,11 +45,11 @@ export function Card({ title, badge, badgeColor, headerRight, children, style, a
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 18,
     marginBottom: 12,
-    borderLeftWidth: 0,
-    borderLeftColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -55,9 +63,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   title: {
     color: Colors.text,
@@ -67,8 +75,8 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
   badge: {
     fontSize: 10,

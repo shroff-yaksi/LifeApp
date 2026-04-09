@@ -19,8 +19,8 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', style
   const btnStyle = [
     styles.base,
     size === 'sm' ? styles.sm : styles.md,
-    variant === 'primary' && (color ? { backgroundColor: color } : styles.primary),
-    variant === 'outline' && styles.outline,
+    variant === 'primary' && (color ? { backgroundColor: color, shadowColor: color, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } } : styles.primary),
+    variant === 'outline' && (color ? { borderColor: color + '50', backgroundColor: color + '10' } : styles.outline),
     variant === 'ghost' && styles.ghost,
     variant === 'danger' && styles.danger,
     variant === 'success' && styles.success,
@@ -40,22 +40,22 @@ export function Button({ title, onPress, variant = 'primary', size = 'md', style
   ];
 
   return (
-    <TouchableOpacity style={btnStyle} onPress={onPress} disabled={disabled} activeOpacity={0.75}>
+    <TouchableOpacity style={btnStyle} onPress={onPress} disabled={disabled} activeOpacity={0.7}>
       <Text style={txtStyle}>{title}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  base: { borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sm: { paddingHorizontal: 14, paddingVertical: 7 },
-  md: { paddingHorizontal: 20, paddingVertical: 12 },
-  primary: { backgroundColor: Colors.accent },
+  md: { paddingHorizontal: 20, paddingVertical: 13 },
+  primary: { backgroundColor: Colors.accent, shadowColor: Colors.accent, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   outline: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: Colors.redBg, borderWidth: 1, borderColor: Colors.red + '40' },
-  success: { backgroundColor: Colors.greenBg, borderWidth: 1, borderColor: Colors.green + '40' },
-  disabled: { opacity: 0.4 },
+  danger: { backgroundColor: Colors.redBg, borderWidth: 1, borderColor: Colors.red + '50' },
+  success: { backgroundColor: Colors.greenBg, borderWidth: 1, borderColor: Colors.green + '50' },
+  disabled: { opacity: 0.38 },
   text: { fontWeight: '700', letterSpacing: 0.1 },
   textSm: { fontSize: 11 },
   textMd: { fontSize: 14 },

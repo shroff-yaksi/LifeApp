@@ -5,7 +5,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS } from '../../src/constants/theme';
 import { TODAY, addDays, getDayType, getWeekStart, formatTime12, timeToMin, NOW_MINUTES, clamp } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
-import { getWeeklyAggregates, getBacklogItems, WeeklyStats } from '../../src/utils/aggregates';
+import { getBacklogItems } from '../../src/utils/aggregates';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 
@@ -25,6 +25,28 @@ function makeChartCfg(hex: string) {
   };
 }
 
+function getDotsForDay(d: DayData | undefined): { color: string }[] {
+  if (!d) return [];
+  const dots: { color: string }[] = [];
+  if (d.gymH > 0 || d.walkH > 0 || d.swimH > 0) dots.push({ color: Colors.green });
+  if (d.studyH > 0) dots.push({ color: Colors.orange });
+  if (d.skillH > 0) dots.push({ color: Colors.yellow });
+  if (d.journalled || d.mindful) dots.push({ color: Colors.pink });
+  return dots.slice(0, 3);
+}
+
+function RemItem({ color, emoji, label, val }: { color: string; emoji: string; label: string; val: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 10 }}>
+      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: color + '25', alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 13 }}>{emoji}</Text>
+      </View>
+      <Text style={{ flex: 1, color: Colors.textSecondary, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+      <Text style={{ color, fontSize: 14, fontWeight: '800' }}>{val}</Text>
+    </View>
+  );
+}
+
 function getDaysOfMonth(y: number, m: number): string[] {
   const days: string[] = [];
   const d = new Date(y, m, 1);
@@ -35,7 +57,8 @@ function getDaysOfMonth(y: number, m: number): string[] {
 type DayData = {
   date: string; habitPct: number; sleepH: number;
   studyH: number; skillH: number; cigs: number; water: number;
-  gym: boolean;
+  gym: boolean; gymH: number; walkH: number; swimH: number;
+  journalled: boolean; mindful: boolean;
 };
 
 export default function DashboardScreen() {
@@ -49,7 +72,6 @@ export default function DashboardScreen() {
   const [water, setWater] = useState(0);
   const [cigs, setCigs] = useState(0);
   const [cigTimer, setCigTimer] = useState('');
-  const [stats, setStats] = useState<WeeklyStats | null>(null);
   const [goals, setGoals] = useState<any>(DEFAULT_GOALS);
   const [tasks, setTasks] = useState<any[]>([]);
   const [completion, setCompletion] = useState<Record<string, any>>({});
@@ -64,6 +86,11 @@ export default function DashboardScreen() {
   const [dayData, setDayData] = useState<DayData[]>([]);
   const [weightLog, setWeightLog] = useState<any[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // ── Calendar day detail ───────────────────────────────────────
+  const [selectedDate, setSelectedDate] = useState<string>(TODAY());
+  const [calDetail, setCalDetail] = useState<any>(null);
+  const [calLoading, setCalLoading] = useState(false);
 
   // ── Load today ────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -100,8 +127,6 @@ export default function DashboardScreen() {
       setCigTimer(`${Math.floor(mins / 60)}h ${mins % 60}m ago`);
     } else { setCigTimer(''); }
 
-    const ws = getWeekStart(TODAY());
-    setStats(await getWeeklyAggregates(ws));
     setGoals(await getData('goals', DEFAULT_GOALS));
     setPomodoroCount(await getData<number>('pomodoro_' + TODAY(), 0));
 
@@ -136,16 +161,40 @@ export default function DashboardScreen() {
       const skillH = skillLogs.filter(l => l.date === ds).reduce((s: number, l: any) => s + l.hours, 0);
       const cigCount = (await getData<any[]>('cigLog_' + ds, [])).length;
       const waterAmt = await getData<number>('water_' + ds, 0);
-      data.push({ date: ds, habitPct, sleepH: sleepEntry?.hours || 0, studyH, skillH, cigs: cigCount, water: waterAmt, gym });
+      const act = await getData<any>('activityLog_' + ds, {});
+      data.push({ date: ds, habitPct, sleepH: sleepEntry?.hours || 0, studyH, skillH, cigs: cigCount, water: waterAmt, gym,
+        gymH: act.gymHours || 0, walkH: act.walkHours || 0, swimH: act.swimHours || 0,
+        journalled: !!act.journalled, mindful: !!act.mindful,
+      });
     }
     setDayData(data);
     setAnalyticsLoading(false);
   }, []);
 
+  const loadCalDetail = useCallback(async (ds: string) => {
+    setCalLoading(true);
+    const habitList = await getData<string[]>('habits', DEFAULT_HABITS);
+    const hData = await getData<Record<string, boolean>>('habitData_' + ds, {});
+    const act = await getData<any>('activityLog_' + ds, {});
+    const studyLogs = await getData<any[]>('studyLogs', []);
+    const skillLogs = await getData<any[]>('skillLogs', []);
+    const sleepLog = await getData<any[]>('sleepLog', []);
+    const water = await getData<number>('water_' + ds, 0);
+    const cigs = (await getData<any[]>('cigLog_' + ds, [])).length;
+    const studyByDomain: Record<string, number> = {};
+    studyLogs.filter(l => l.date === ds).forEach((l: any) => { studyByDomain[l.domainName] = (studyByDomain[l.domainName] || 0) + l.hours; });
+    const skillBySkill: Record<string, number> = {};
+    skillLogs.filter(l => l.date === ds).forEach((l: any) => { skillBySkill[l.skill] = (skillBySkill[l.skill] || 0) + l.hours; });
+    const sleep = sleepLog.find((s: any) => s.date === ds);
+    setCalDetail({ habits: habitList, habitData: hData, act, studyByDomain, skillBySkill, sleep, water, cigs });
+    setCalLoading(false);
+  }, []);
+
   useFocusEffect(useCallback(() => {
     loadData();
     loadMonth(year, month);
-  }, [loadData, loadMonth, year, month]));
+    loadCalDetail(TODAY());
+  }, [loadData, loadMonth, loadCalDetail, year, month]));
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -208,19 +257,6 @@ export default function DashboardScreen() {
   const schedPct = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
   const greetEmoji = greeting.includes('morning') ? '🌅' : greeting.includes('afternoon') ? '☀️' : '🌙';
 
-  const goalItems = stats ? [
-    { label: 'Gym hrs', actual: stats.gymHours, target: goals.weeklyGymHours || 5, color: Colors.green, icon: '💪' },
-    { label: 'Walk hrs', actual: stats.walkHours, target: goals.weeklyWalkHours || 7, color: Colors.teal, icon: '🚶' },
-    { label: 'Swim hrs', actual: stats.swimHours, target: goals.weeklySwimHours || 3, color: Colors.cyan, icon: '🏊' },
-    { label: 'Journalled', actual: stats.journalDays, target: goals.weeklyJournalDays || 7, color: Colors.pink, icon: '📓' },
-    { label: 'Mindful', actual: stats.mindfulDays, target: goals.weeklyMindfulDays || 7, color: Colors.purple, icon: '🧘' },
-    { label: 'Study hrs', actual: stats.studyHours, target: goals.weeklyStudyHours || 10, color: Colors.orange, icon: '📚' },
-    { label: 'Skill hrs', actual: stats.skillHours, target: goals.weeklySkillHours || 8, color: Colors.yellow, icon: '🎸' },
-    { label: 'Cigarettes', actual: stats.totalCigs, target: goals.weeklyCigLimit || 5, color: Colors.red, invert: true, icon: '🚬' },
-    { label: 'Water', actual: stats.totalWater, target: goals.weeklyWater || 56, color: Colors.cyan, icon: '💧' },
-    { label: 'Avg Sleep', actual: stats.avgSleep, target: goals.weeklySleepAvg || 7.25, color: Colors.purple, icon: '😴' },
-  ] : [];
-
   // ── Derived: analytics ────────────────────────────────────────
   const monthLabel = new Date(year, month, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
   const avgHabitPct = dayData.length ? Math.round(dayData.reduce((s, d) => s + d.habitPct, 0) / dayData.length) : 0;
@@ -237,25 +273,29 @@ export default function DashboardScreen() {
   const badSleepHabit = badSleepDays.length ? Math.round(badSleepDays.reduce((s, d) => s + d.habitPct, 0) / badSleepDays.length) : null;
   const bestDay = dayData.reduce<DayData | null>((best, d) => d.habitPct > (best?.habitPct || 0) ? d : best, null);
 
+  // ── Monthly goals ─────────────────────────────────────────────
+  const monthlyGymH = dayData.reduce((s, d) => s + d.gymH, 0);
+  const monthlyWalkH = dayData.reduce((s, d) => s + d.walkH, 0);
+  const monthlySwimH = dayData.reduce((s, d) => s + d.swimH, 0);
+  const monthlyJournalDays = dayData.filter(d => d.journalled).length;
+  const monthlyMindfulDays = dayData.filter(d => d.mindful).length;
+  const daysTracked = dayData.length;
+  const monthlyGoalItems = daysTracked > 0 ? [
+    { label: 'Gym hrs', actual: monthlyGymH, target: (goals.weeklyGymHours || 5) * 4, color: Colors.green, icon: '💪' },
+    { label: 'Walk hrs', actual: monthlyWalkH, target: (goals.weeklyWalkHours || 7) * 4, color: Colors.teal, icon: '🚶' },
+    { label: 'Swim hrs', actual: monthlySwimH, target: (goals.weeklySwimHours || 3) * 4, color: Colors.cyan, icon: '🏊' },
+    { label: 'Journalled', actual: monthlyJournalDays, target: daysTracked, color: Colors.pink, icon: '📓' },
+    { label: 'Mindful', actual: monthlyMindfulDays, target: daysTracked, color: Colors.purple, icon: '🧘' },
+    { label: 'Study hrs', actual: totalStudy, target: (goals.weeklyStudyHours || 10) * 4, color: Colors.orange, icon: '📚' },
+    { label: 'Skill hrs', actual: totalSkill, target: (goals.weeklySkillHours || 8) * 4, color: Colors.yellow, icon: '🎸' },
+    { label: 'Cigarettes', actual: totalCigs, target: (goals.weeklyCigLimit || 5) * 4, color: Colors.red, invert: true, icon: '🚬' },
+    { label: 'Avg Sleep', actual: avgSleep, target: goals.weeklySleepAvg || 7.25, color: Colors.purple, icon: '😴' },
+  ] : [];
+
   const allMonthDays = getDaysOfMonth(year, month);
   const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
   const cells: (string | null)[] = [...Array(firstDow).fill(null), ...allMonthDays];
   while (cells.length % 7 !== 0) cells.push(null);
-
-  const heatBg = (d: DayData | undefined, ds: string) => {
-    if (ds > TODAY()) return Colors.surface;
-    if (!d) return Colors.surfaceHigh;
-    if (d.habitPct === 0) return Colors.redBg;
-    if (d.habitPct < 50) return Colors.orangeBg;
-    if (d.habitPct < 80) return Colors.yellowBg;
-    return Colors.greenBg;
-  };
-  const heatTc = (d: DayData | undefined, ds: string) => {
-    if (ds > TODAY() || !d) return Colors.textMuted;
-    if (d.habitPct < 50) return Colors.orange;
-    if (d.habitPct < 80) return Colors.yellow;
-    return Colors.green;
-  };
 
   const sleepChart = dayData.filter(d => d.sleepH > 0).slice(-14);
   const habitChart = dayData.slice(-14);
@@ -278,14 +318,16 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* ── GREETING BANNER ─────────────────────────────────── */}
-      <View style={styles.banner}>
+      <View style={[styles.banner, { borderTopColor: C, borderTopWidth: 2, borderColor: Colors.border, borderWidth: 1, borderRadius: 22 }]}>
+        {/* Ambient glow blob */}
+        <View style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, borderRadius: 70, backgroundColor: C + '0e', pointerEvents: 'none' }} />
         <View style={styles.bannerTop}>
           <View>
             <Text style={styles.bannerEmoji}>{greetEmoji}</Text>
             <Text style={styles.bannerGreeting}>{greeting}</Text>
             <Text style={styles.bannerSub}>Let's make today count</Text>
           </View>
-          <View style={styles.streakBadge}>
+          <View style={[styles.streakBadge, { borderColor: Colors.orange + '50', shadowColor: Colors.orange, shadowOpacity: 0.2, shadowRadius: 8 }]}>
             <Text style={styles.streakFire}>🔥</Text>
             <Text style={styles.streakNum}>{streak}</Text>
             <Text style={styles.streakLabel}>day streak</Text>
@@ -295,7 +337,7 @@ export default function DashboardScreen() {
           <Text style={styles.bannerProgressLabel}>Habits today</Text>
           <Text style={[styles.bannerProgressPct, { color: C }]}>{habitDone}/{habits.length}</Text>
         </View>
-        <ProgressBar progress={habitPct} color={C} height={5} />
+        <ProgressBar progress={habitPct} color={C} height={6} />
       </View>
 
       {/* ── TODAY'S SCHEDULE ─────────────────────────────────── */}
@@ -409,23 +451,23 @@ export default function DashboardScreen() {
         </Card>
       )}
 
-      {/* ── WEEKLY GOALS ─────────────────────────────────────── */}
-      {stats && (
-        <Card title="Weekly Goals" accentColor={C}>
+      {/* ── MONTHLY GOALS ────────────────────────────────────── */}
+      {monthlyGoalItems.length > 0 && (
+        <Card title={`Monthly Goals — ${monthLabel}`} accentColor={C}>
           <View style={styles.goalGrid}>
-            {goalItems.map(g => {
-              const pct = g.invert
+            {monthlyGoalItems.map(g => {
+              const pct = (g as any).invert
                 ? (g.target > 0 ? clamp((1 - g.actual / g.target) * 100, 0, 100) : 100)
                 : (g.target > 0 ? clamp((g.actual / g.target) * 100, 0, 100) : 0);
               const display = Number.isInteger(g.actual) ? String(g.actual) : g.actual.toFixed(1);
-              const over = !g.invert && pct >= 100;
+              const over = !(g as any).invert && pct >= 100;
               return (
                 <View key={g.label} style={[styles.goalItem, { borderColor: g.color + '30' }]}>
                   <Text style={styles.goalIcon}>{g.icon}</Text>
                   <Text style={[styles.goalVal, { color: g.color }]}>{display}</Text>
                   <Text style={styles.goalLabel}>{g.label}</Text>
                   <View style={{ marginTop: 8 }}><ProgressBar progress={pct} color={g.color} height={4} /></View>
-                  <Text style={styles.goalTarget}>{over ? '✓ Done!' : `${g.invert ? 'limit' : 'target'}: ${g.target}`}</Text>
+                  <Text style={styles.goalTarget}>{over ? '✓ Done!' : `target: ${g.target}`}</Text>
                 </View>
               );
             })}
@@ -471,43 +513,126 @@ export default function DashboardScreen() {
         </View>
       </Card>
 
-      {/* Habit Heatmap */}
-      <Card title="Habit Heatmap" accentColor={Colors.green}>
-        <View style={styles.weekRow}>
+      {/* iOS Calendar */}
+      <Card title="Calendar" accentColor={AC}>
+        <View style={styles.calWeekRow}>
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <View key={i} style={styles.dayHeaderCell}>
-              <Text style={styles.dayHeaderTxt}>{d}</Text>
+            <View key={i} style={styles.calDayHeader}>
+              <Text style={styles.calDayHeaderTxt}>{d}</Text>
             </View>
           ))}
         </View>
         {Array.from({ length: cells.length / 7 }, (_, row) => (
-          <View key={row} style={styles.weekRow}>
+          <View key={row} style={styles.calWeekRow}>
             {cells.slice(row * 7, row * 7 + 7).map((ds, col) => {
-              if (!ds) return <View key={col} style={styles.heatCell} />;
+              if (!ds) return <View key={col} style={styles.calCell} />;
               const d = dayData.find(x => x.date === ds);
+              const isFuture = ds > TODAY();
+              const isSelected = ds === selectedDate;
+              const isToday = ds === TODAY();
+              const dots = getDotsForDay(d);
+              const dayNum = new Date(ds + 'T12:00').getDate();
               return (
-                <View key={col} style={[styles.heatCell, { backgroundColor: heatBg(d, ds) }]}>
-                  <Text style={[styles.heatDay, { color: heatTc(d, ds) }]}>{new Date(ds + 'T12:00').getDate()}</Text>
-                  {d && d.habitPct > 0 && <Text style={[styles.heatPct, { color: heatTc(d, ds) }]}>{d.habitPct}%</Text>}
-                </View>
+                <TouchableOpacity
+                  key={col}
+                  style={styles.calCell}
+                  onPress={() => { if (!isFuture) { setSelectedDate(ds); loadCalDetail(ds); } }}
+                  activeOpacity={isFuture ? 1 : 0.7}
+                >
+                  <View style={[
+                    styles.calDayCircle,
+                    isSelected && { backgroundColor: AC },
+                    isToday && !isSelected && { borderWidth: 1.5, borderColor: AC },
+                  ]}>
+                    <Text style={[
+                      styles.calDayNum,
+                      isFuture && { color: Colors.textMuted },
+                      isSelected && { color: '#fff', fontWeight: '800' },
+                      isToday && !isSelected && { color: AC },
+                    ]}>{dayNum}</Text>
+                  </View>
+                  <View style={styles.calDots}>
+                    {dots.map((dot, di) => (
+                      <View key={di} style={[styles.calDot, { backgroundColor: dot.color }]} />
+                    ))}
+                  </View>
+                </TouchableOpacity>
               );
             })}
           </View>
         ))}
-        <View style={styles.heatLegend}>
+        <View style={styles.calLegend}>
           {[
-            { text: Colors.green, label: '80%+' },
-            { text: Colors.yellow, label: '50–79%' },
-            { text: Colors.orange, label: '<50%' },
-            { text: Colors.red, label: '0%' },
+            { color: Colors.green, label: 'Exercise' },
+            { color: Colors.orange, label: 'Study' },
+            { color: Colors.yellow, label: 'Skills' },
+            { color: Colors.pink, label: 'Mind' },
           ].map((l, i) => (
-            <View key={i} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: l.text }]} />
-              <Text style={[styles.legendLabel, { color: l.text }]}>{l.label}</Text>
+            <View key={i} style={styles.calLegendItem}>
+              <View style={[styles.calDot, { backgroundColor: l.color }]} />
+              <Text style={[styles.calLegendTxt, { color: l.color }]}>{l.label}</Text>
             </View>
           ))}
         </View>
       </Card>
+
+      {/* Inline Day Detail */}
+      {calDetail && (
+        <Card
+          title={new Date(selectedDate + 'T12:00').toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
+          accentColor={AC}
+        >
+          {calLoading ? (
+            <ActivityIndicator color={AC} size="small" style={{ marginVertical: 20 }} />
+          ) : (
+            <>
+              <Text style={styles.remSection}>Habits</Text>
+              <View style={styles.detailHabitRow}>
+                {calDetail.habits.map((h: string) => {
+                  const done = !!calDetail.habitData[h];
+                  return (
+                    <View key={h} style={[styles.detailChip, done && { backgroundColor: Colors.green + '20', borderColor: Colors.green + '50' }]}>
+                      <Text style={{ color: done ? Colors.green : Colors.textMuted, fontSize: 11, fontWeight: '700' }}>
+                        {done ? '✓ ' : '✗ '}{h}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.remSection}>Activity</Text>
+              <RemItem color={Colors.green} emoji="💪" label="Gym" val={`${(calDetail.act.gymHours || 0).toFixed(1)}h`} />
+              <RemItem color={Colors.teal} emoji="🚶" label="Walking" val={`${(calDetail.act.walkHours || 0).toFixed(1)}h`} />
+              <RemItem color={Colors.cyan} emoji="🏊" label="Swimming" val={`${(calDetail.act.swimHours || 0).toFixed(1)}h`} />
+              <RemItem color={Colors.pink} emoji="📓" label="Journalled" val={calDetail.act.journalled ? '✓ Yes' : '✗ No'} />
+              <RemItem color={Colors.purple} emoji="🧘" label="Mindfulness" val={calDetail.act.mindful ? '✓ Yes' : '✗ No'} />
+
+              {Object.keys(calDetail.studyByDomain).length > 0 && (
+                <>
+                  <Text style={styles.remSection}>Study</Text>
+                  {Object.entries(calDetail.studyByDomain).map(([name, h]: any) => (
+                    <RemItem key={name} color={Colors.orange} emoji="📚" label={name} val={`${h.toFixed(1)}h`} />
+                  ))}
+                </>
+              )}
+
+              {Object.keys(calDetail.skillBySkill).length > 0 && (
+                <>
+                  <Text style={styles.remSection}>Skills</Text>
+                  {Object.entries(calDetail.skillBySkill).map(([name, h]: any) => (
+                    <RemItem key={name} color={Colors.yellow} emoji="🎸" label={name} val={`${h.toFixed(1)}h`} />
+                  ))}
+                </>
+              )}
+
+              <Text style={styles.remSection}>Wellness</Text>
+              <RemItem color={Colors.purple} emoji="😴" label="Sleep" val={calDetail.sleep ? `${calDetail.sleep.hours.toFixed(1)}h` : '–'} />
+              <RemItem color={Colors.cyan} emoji="💧" label="Water" val={`${calDetail.water} glasses`} />
+              <RemItem color={calDetail.cigs > 0 ? Colors.red : Colors.green} emoji="🚬" label="Cigarettes" val={String(calDetail.cigs)} />
+            </>
+          )}
+        </Card>
+      )}
 
       {/* Charts */}
       {habitChart.length >= 3 && (
@@ -607,12 +732,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
 
   // Banner
-  banner: { backgroundColor: Colors.card, borderRadius: 20, padding: 20, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: TAB_COLORS.index },
+  banner: { backgroundColor: Colors.card, padding: 20, marginBottom: 12, overflow: 'hidden' },
   bannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  bannerEmoji: { fontSize: 26, marginBottom: 4 },
-  bannerGreeting: { color: Colors.text, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  streakBadge: { backgroundColor: Colors.orange + '15', borderWidth: 1, borderColor: Colors.orange + '40', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, alignItems: 'center' },
+  bannerEmoji: { fontSize: 28, marginBottom: 6 },
+  bannerGreeting: { color: Colors.text, fontSize: 27, fontWeight: '800', letterSpacing: -0.5 },
+  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 3 },
+  streakBadge: { backgroundColor: Colors.orange + '12', borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, alignItems: 'center' },
   streakFire: { fontSize: 22 },
   streakNum: { color: Colors.orange, fontSize: 22, fontWeight: '800', lineHeight: 26 },
   streakLabel: { color: Colors.orange + 'aa', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
@@ -642,13 +767,13 @@ const styles = StyleSheet.create({
 
   // Trackers
   trackerGrid: { flexDirection: 'row', gap: 10 },
-  trackerBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  trackerBoxIcon: { fontSize: 22, marginBottom: 4 },
-  trackerBoxVal: { fontSize: 26, fontWeight: '800', lineHeight: 30 },
-  trackerBoxLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '600', marginTop: 2, marginBottom: 8, textAlign: 'center' },
+  trackerBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 18, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  trackerBoxIcon: { fontSize: 24, marginBottom: 6 },
+  trackerBoxVal: { fontSize: 28, fontWeight: '800', lineHeight: 32 },
+  trackerBoxLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '600', marginTop: 3, marginBottom: 10, textAlign: 'center' },
   trackerBtns: { flexDirection: 'row', gap: 6 },
-  trackerBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  trackerBtnTxt: { color: Colors.textSecondary, fontSize: 14, fontWeight: '800' },
+  trackerBtn: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 10 },
+  trackerBtnTxt: { color: Colors.textSecondary, fontSize: 15, fontWeight: '800' },
 
   // Backlog
   backlogItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 6 },
@@ -659,9 +784,9 @@ const styles = StyleSheet.create({
 
   // Goals
   goalGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  goalItem: { width: '47%', backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1 },
-  goalIcon: { fontSize: 18, marginBottom: 4 },
-  goalVal: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  goalItem: { width: '47%', backgroundColor: Colors.surface, borderRadius: 18, padding: 16, borderWidth: 1 },
+  goalIcon: { fontSize: 20, marginBottom: 6 },
+  goalVal: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
   goalLabel: { color: Colors.textMuted, fontSize: 10, marginBottom: 4, fontWeight: '600' },
   goalTarget: { color: Colors.textMuted, fontSize: 9, marginTop: 6, fontWeight: '600' },
 
@@ -679,28 +804,35 @@ const styles = StyleSheet.create({
 
   // Analytics: summary grid
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statItem: { width: '22%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 4, borderWidth: 1 },
-  statIcon: { fontSize: 16, marginBottom: 4 },
+  statItem: { width: '22%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 4, borderWidth: 1 },
+  statIcon: { fontSize: 18, marginBottom: 5 },
   statVal: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   statLabel: { color: Colors.textMuted, fontSize: 8, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 3, textAlign: 'center' },
 
-  // Heatmap
-  weekRow: { flexDirection: 'row', marginBottom: 3 },
-  dayHeaderCell: { flex: 1, alignItems: 'center', paddingBottom: 4 },
-  dayHeaderTxt: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  heatCell: { flex: 1, aspectRatio: 1, margin: 2, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surface },
-  heatDay: { fontSize: 9, fontWeight: '700' },
-  heatPct: { fontSize: 6, marginTop: 1, fontWeight: '600' },
-  heatLegend: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 12 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 9, fontWeight: '700' },
+  // iOS Calendar
+  calWeekRow: { flexDirection: 'row', marginBottom: 2 },
+  calDayHeader: { flex: 1, alignItems: 'center', paddingBottom: 6 },
+  calDayHeaderTxt: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  calCell: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  calDayCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  calDayNum: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+  calDots: { flexDirection: 'row', gap: 2, marginTop: 2, height: 5 },
+  calDot: { width: 5, height: 5, borderRadius: 2.5 },
+  calLegend: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 10 },
+  calLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  calLegendTxt: { fontSize: 9, fontWeight: '700' },
+
+  // Day detail (inline)
+  remSection: { color: Colors.textMuted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase' as const, letterSpacing: 1, marginTop: 14, marginBottom: 4 },
 
   // Insights
-  insightRow: { flexDirection: 'row', gap: 12, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 8 },
-  insightIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  insightRow: { flexDirection: 'row', gap: 12, backgroundColor: Colors.surface, borderRadius: 16, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
+  insightIconBox: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   insightContent: { flex: 1 },
   insightTitle: { color: Colors.text, fontSize: 13, fontWeight: '800', letterSpacing: -0.3, marginBottom: 4 },
   insightBody: { color: Colors.textSecondary, fontSize: 12, lineHeight: 19 },
   emptyState: { alignItems: 'center', paddingVertical: 20 },
+
+  detailHabitRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
+  detailChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
 });
