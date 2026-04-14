@@ -16,7 +16,23 @@
       "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/settings.tsx\")",
       "Bash(cat \"/Users/shroffyaksi/Desktop/LifeApp/app/\\(tabs\\)/_layout.tsx\")",
       "Bash(npx qrcode-terminal:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(python3:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(xcodebuild -version)",
+      "Bash(xcodebuild -workspace /Users/shroffyaksi/Desktop/LifeApp/ios/LifeOS.xcworkspace -scheme LifeOS -showdestinations)",
+      "Bash(xcodebuild -showsdks)",
+      "Bash(open -a Simulator)",
+      "Bash(xcodebuild -workspace /Users/shroffyaksi/Desktop/LifeApp/ios/LifeOS.xcworkspace -configuration Debug -scheme LifeOS -destination id=00008150-0011602E3CF2401C DEVELOPMENT_TEAM=KSFY62S592 -allowProvisioningUpdates -allowProvisioningDeviceRegistration)",
+      "Bash(pod install:*)",
+      "Bash(cp:*)",
+      "Bash(chmod -R u+w /Users/shroffyaksi/Desktop/LifeApp/ios/Pods/React-Core-prebuilt/)",
+      "Bash(cp ~/Library/Caches/CocoaPods/Pods/External/React-Core-prebuilt/f882f8be4bf7394f1be0efd4e06cf3c2-8f4cc/React.xcframework/ios-arm64/React.framework/React /Users/shroffyaksi/Desktop/LifeApp/ios/Pods/React-Core-prebuilt/React.xcframework/ios-arm64/React.framework/React)",
+      "Bash(cp ~/Library/Caches/CocoaPods/Pods/External/React-Core-prebuilt/f882f8be4bf7394f1be0efd4e06cf3c2-8f4cc/React.xcframework/ios-arm64_x86_64-simulator/React.framework/React /Users/shroffyaksi/Desktop/LifeApp/ios/Pods/React-Core-prebuilt/React.xcframework/ios-arm64_x86_64-simulator/React.framework/React)",
+      "Bash(xargs kill:*)",
+      "Bash(gh pr:*)"
     ]
   }
 }
