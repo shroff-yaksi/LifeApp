@@ -1,4 +1,11 @@
-export const TODAY = () => new Date().toISOString().slice(0, 10);
+const localDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const TODAY = () => localDateStr(new Date());
 
 export const NOW_MINUTES = () => {
   const d = new Date();
@@ -26,7 +33,7 @@ export const uid = () => Date.now().toString(36) + Math.random().toString(36).sl
 
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export const dateStr = (d: Date) => d.toISOString().slice(0, 10);
+export const dateStr = (d: Date) => localDateStr(d);
 
 export const addDays = (ds: string, n: number) => {
   const d = new Date(ds + 'T00:00:00');
