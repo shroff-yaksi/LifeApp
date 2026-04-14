@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lifeos.app",
+      "bundleIdentifier": "com.yaksishroff.lifeos",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090b"
       },
-      "package": "com.lifeos.app"
+      "package": "com.yaksishroff.lifeos"
     },
     "web": {
       "favicon": "./assets/favicon.png"

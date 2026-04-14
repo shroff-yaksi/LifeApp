@@ -18,6 +18,7 @@ type Domain = { id: string; name: string };
 type StudyLog = { id: string; domainId: string; domainName: string; hours: number; topic: string; date: string; createdAt: string };
 
 export default function LearningScreen() {
+  const [logDate, setLogDate] = useState(TODAY());
   const [domains, setDomains] = useState<Domain[]>([]);
   const [logs, setLogs] = useState<StudyLog[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,19 +40,23 @@ export default function LearningScreen() {
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
+  const prevDay = () => setLogDate(d => addDays(d, -1));
+  const nextDay = () => { if (logDate < TODAY()) setLogDate(d => addDays(d, 1)); };
+  const dateLabel = logDate === TODAY() ? 'Today' : new Date(logDate + 'T12:00').toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+
   const dow = getDayOfWeek(TODAY());
   const rotation = dow >= 1 && dow <= 5 ? LEARNING_ROTATION[dow] : null;
 
   const adjustStudy = async (domainId: string, domainName: string, delta: number) => {
     const current = [...logs];
-    const idx = current.findIndex(l => l.domainId === domainId && l.date === TODAY());
+    const idx = current.findIndex(l => l.domainId === domainId && l.date === logDate);
     const currentHours = idx >= 0 ? current[idx].hours : 0;
     const newHours = Math.max(0, Math.round((currentHours + delta) * 2) / 2);
     if (idx >= 0) {
       if (newHours === 0) current.splice(idx, 1);
       else current[idx] = { ...current[idx], hours: newHours };
     } else if (newHours > 0) {
-      current.push({ id: uid(), domainId, domainName, hours: newHours, topic: '', date: TODAY(), createdAt: new Date().toISOString() });
+      current.push({ id: uid(), domainId, domainName, hours: newHours, topic: '', date: logDate, createdAt: new Date().toISOString() });
     }
     setLogs(current);
     await setData('studyLogs', current);
@@ -103,9 +108,20 @@ export default function LearningScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Today's Study Hours */}
+      {/* Date Navigator */}
+      <View style={styles.dateNav}>
+        <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>
+          <Text style={styles.dateNavArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.dateNavLabel}>{dateLabel}</Text>
+        <TouchableOpacity style={[styles.dateNavBtn, logDate >= TODAY() && { opacity: 0.3 }]} onPress={nextDay} disabled={logDate >= TODAY()}>
+          <Text style={styles.dateNavArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Study Hours for Selected Date */}
       <Card
-        title="Today's Study"
+        title="Study Hours"
         accentColor={C}
         headerRight={
           <Button title="+ Notes" size="sm" variant="outline" color={C}
@@ -113,7 +129,7 @@ export default function LearningScreen() {
         }
       >
         {domains.map(d => {
-          const todayH = logs.filter(l => l.domainId === d.id && l.date === TODAY()).reduce((s, l) => s + l.hours, 0);
+          const todayH = logs.filter(l => l.domainId === d.id && l.date === logDate).reduce((s, l) => s + l.hours, 0);
           return (
             <View key={d.id} style={styles.actRow}>
               <Text style={styles.actLabel}>{d.name}</Text>
@@ -274,6 +290,10 @@ export default function LearningScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.card, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
+  dateNavBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center' },
+  dateNavArrow: { color: Colors.text, fontSize: 24, fontWeight: '300', lineHeight: 28 },
+  dateNavLabel: { color: Colors.text, fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   actRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, gap: 10 },
   actLabel: { flex: 1, color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
   actStepper: { flexDirection: 'row', alignItems: 'center', gap: 8 },

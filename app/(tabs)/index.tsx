@@ -17,7 +17,7 @@ function makeChartCfg(hex: string) {
   return {
     backgroundGradientFrom: Colors.surface,
     backgroundGradientTo: Colors.surface,
-    color: (op = 1) => hex.replace(')', `,${op})`).replace('rgb', 'rgba'),
+    color: (op = 1) => { const m = hex.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? `rgba(${m[1]},${m[2]},${m[3]},${op})` : hex; },
     labelColor: () => Colors.textMuted,
     decimalPlaces: 1,
     propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.04)' },

@@ -25,6 +25,7 @@ function getSkillEmoji(skill: string): string {
 }
 
 export default function SkillsScreen() {
+  const [logDate, setLogDate] = useState(TODAY());
   const [skillList, setSkillList] = useState<string[]>(DEFAULT_SKILL_LIST);
   const [logs, setLogs] = useState<SkillLog[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -54,18 +55,22 @@ export default function SkillsScreen() {
 
   const adjustSkill = async (skill: string, delta: number) => {
     const current = [...logs];
-    const idx = current.findIndex(l => l.skill === skill && l.date === TODAY());
+    const idx = current.findIndex(l => l.skill === skill && l.date === logDate);
     const currentHours = idx >= 0 ? current[idx].hours : 0;
     const newHours = Math.max(0, Math.round((currentHours + delta) * 2) / 2);
     if (idx >= 0) {
       if (newHours === 0) current.splice(idx, 1);
       else current[idx] = { ...current[idx], hours: newHours };
     } else if (newHours > 0) {
-      current.push({ id: uid(), skill, hours: newHours, notes: '', date: TODAY(), createdAt: new Date().toISOString() });
+      current.push({ id: uid(), skill, hours: newHours, notes: '', date: logDate, createdAt: new Date().toISOString() });
     }
     setLogs(current);
     await setData('skillLogs', current);
   };
+
+  const prevDay = () => setLogDate(d => addDays(d, -1));
+  const nextDay = () => { if (logDate < TODAY()) setLogDate(d => addDays(d, 1)); };
+  const dateLabel = logDate === TODAY() ? 'Today' : new Date(logDate + 'T12:00').toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const savePractice = async () => {
     const h = parseFloat(hours);
@@ -123,6 +128,17 @@ export default function SkillsScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Date Navigator */}
+      <View style={styles.dateNav}>
+        <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>
+          <Text style={styles.dateNavArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.dateNavLabel}>{dateLabel}</Text>
+        <TouchableOpacity style={[styles.dateNavBtn, logDate >= TODAY() && { opacity: 0.3 }]} onPress={nextDay} disabled={logDate >= TODAY()}>
+          <Text style={styles.dateNavArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Skill Practice Overview */}
       <Card
         title="Today's Practice"
@@ -132,7 +148,7 @@ export default function SkillsScreen() {
         {skillList.length === 0 ? (
           <Text style={styles.emptyText}>No skills yet. Add skills below.</Text>
         ) : skillList.map(skill => {
-          const todayH = logs.filter(l => l.skill === skill && l.date === TODAY()).reduce((s, l) => s + l.hours, 0);
+          const todayH = logs.filter(l => l.skill === skill && l.date === logDate).reduce((s, l) => s + l.hours, 0);
           const totalHrs = logs.filter(l => l.skill === skill).reduce((s, l) => s + l.hours, 0);
           const thisWeek = logs.filter(l => l.skill === skill && l.date >= weekStart).reduce((s, l) => s + l.hours, 0);
           return (
@@ -302,6 +318,10 @@ export default function SkillsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.card, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
+  dateNavBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center' },
+  dateNavArrow: { color: Colors.text, fontSize: 24, fontWeight: '300', lineHeight: 28 },
+  dateNavLabel: { color: Colors.text, fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   actStepper: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.surfaceHigh, alignItems: 'center', justifyContent: 'center' },
   stepBtnTxt: { color: Colors.textSecondary, fontSize: 18, fontWeight: '700', lineHeight: 22 },

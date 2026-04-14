@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { Colors, DEFAULT_MEAL_TIMINGS, TAB_COLORS } from '../../src/constants/theme';
-import { TODAY, formatTime12, timeToMin, uid } from '../../src/utils/helpers';
+import { TODAY, addDays, formatTime12, timeToMin, uid } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -16,7 +16,7 @@ const screenW = Dimensions.get('window').width - 48;
 const chartCfg = (color: string, hex: string) => ({
   backgroundGradientFrom: Colors.surface,
   backgroundGradientTo: Colors.surface,
-  color: (op = 1) => hex.replace(')', `,${op})`).replace('rgb', 'rgba'),
+  color: (op = 1) => { const m = hex.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? `rgba(${m[1]},${m[2]},${m[3]},${op})` : hex; },
   labelColor: () => Colors.textMuted,
   decimalPlaces: 1,
   propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.04)' },
@@ -27,6 +27,7 @@ type ActivityLog = { gymHours: number; walkHours: number; swimHours: number; jou
 const DEFAULT_ACTIVITY: ActivityLog = { gymHours: 0, walkHours: 0, swimHours: 0, journalled: false, mindful: false };
 
 export default function FitnessScreen() {
+  const [logDate, setLogDate] = useState(TODAY());
   const [activity, setActivity] = useState<ActivityLog>(DEFAULT_ACTIVITY);
   const [weightLog, setWeightLog] = useState<any[]>([]);
   const [sleepLog, setSleepLog] = useState<any[]>([]);
@@ -47,33 +48,37 @@ export default function FitnessScreen() {
   const [devDesc, setDevDesc] = useState('');
   const [devNotes, setDevNotes] = useState('');
 
-  const loadData = useCallback(async () => {
-    setActivity(await getData<ActivityLog>('activityLog_' + TODAY(), DEFAULT_ACTIVITY));
+  const loadGlobal = useCallback(async () => {
     setWeightLog(await getData('weightLog', []));
     setSleepLog(await getData('sleepLog', []));
     setTargetWeightVal(await getData('targetWeight', ''));
     setTargetSleepVal(await getData('targetSleep', 7.25));
-    const m = await getData<Record<string, Record<string, string>>>('meals', {});
-    setMeals(m[TODAY()] || {});
-    setCigCount((await getData<any[]>('cigLog_' + TODAY(), [])).length);
     setDeviations(await getData('dietDeviations', []));
   }, []);
+
+  const loadForDate = useCallback(async (date: string) => {
+    setActivity(await getData<ActivityLog>('activityLog_' + date, DEFAULT_ACTIVITY));
+    const m = await getData<Record<string, Record<string, string>>>('meals', {});
+    setMeals(m[date] || {});
+    setCigCount((await getData<any[]>('cigLog_' + date, [])).length);
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadGlobal(); loadForDate(logDate); }, [loadGlobal, loadForDate, logDate]));
+  useEffect(() => { loadForDate(logDate); }, [logDate, loadForDate]);
 
   const adjustHours = async (key: keyof ActivityLog, delta: number) => {
     const current = (activity[key] as number) || 0;
     const newVal = Math.max(0, Math.round((current + delta) * 2) / 2);
     const updated = { ...activity, [key]: newVal };
     setActivity(updated);
-    await setData('activityLog_' + TODAY(), updated);
+    await setData('activityLog_' + logDate, updated);
   };
 
   const toggleBool = async (key: keyof ActivityLog) => {
     const updated = { ...activity, [key]: !activity[key] };
     setActivity(updated);
-    await setData('activityLog_' + TODAY(), updated);
+    await setData('activityLog_' + logDate, updated);
   };
-
-  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const saveWeight = async () => {
     const v = parseFloat(wValue);
@@ -91,7 +96,7 @@ export default function FitnessScreen() {
 
   const saveMealItem = async (type: string, val: string) => {
     const m = { ...meals, [type]: val }; setMeals(m);
-    const all = await getData<any>('meals', {}); all[TODAY()] = m; await setData('meals', all);
+    const all = await getData<any>('meals', {}); all[logDate] = m; await setData('meals', all);
   };
 
   const saveDev = async () => {
@@ -135,6 +140,10 @@ export default function FitnessScreen() {
   const devColors: Record<string, string> = { 'alcohol': Colors.purple, 'extra-snack': Colors.orange, 'off-diet': Colors.red, 'junk-food': Colors.red, 'sugary-drink': Colors.cyan, 'other': Colors.textMuted };
   const mealEmojis: Record<string, string> = { breakfast: '🌅', lunch: '☀️', snack: '🍎', dinner: '🌙' };
 
+  const prevDay = () => setLogDate(d => addDays(d, -1));
+  const nextDay = () => { if (logDate < TODAY()) setLogDate(d => addDays(d, 1)); };
+  const dateLabel = logDate === TODAY() ? 'Today' : new Date(logDate + 'T12:00').toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+
   const hourItems = [
     { key: 'gymHours' as keyof ActivityLog, label: 'Gym', emoji: '💪', color: C },
     { key: 'walkHours' as keyof ActivityLog, label: 'Walking', emoji: '🚶', color: Colors.teal },
@@ -147,6 +156,17 @@ export default function FitnessScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Date Navigator */}
+      <View style={styles.dateNav}>
+        <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>
+          <Text style={styles.dateNavArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.dateNavLabel}>{dateLabel}</Text>
+        <TouchableOpacity style={[styles.dateNavBtn, logDate >= TODAY() && { opacity: 0.3 }]} onPress={nextDay} disabled={logDate >= TODAY()}>
+          <Text style={styles.dateNavArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Daily Activity Checklist */}
       <Card title="Today's Activity" accentColor={C}>
         {hourItems.map(item => (
@@ -336,6 +356,10 @@ export default function FitnessScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.card, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
+  dateNavBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center' },
+  dateNavArrow: { color: Colors.text, fontSize: 24, fontWeight: '300', lineHeight: 28 },
+  dateNavLabel: { color: Colors.text, fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   actRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, gap: 10 },
   actEmoji: { fontSize: 20, width: 28, textAlign: 'center' },
   actLabel: { flex: 1, color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
