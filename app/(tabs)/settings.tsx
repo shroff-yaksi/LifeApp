@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, Share, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, Share, TextInput, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, DEFAULT_REMINDER_SETTINGS, DEFAULT_GOALS, DEFAULT_HABITS, TAB_COLORS } from '../../src/constants/theme';
 import { getData, setData, exportAllData, getAllKeys, removeData, importAllData } from '../../src/utils/storage';
@@ -12,6 +12,7 @@ import { scheduleAllReminders, cancelAllReminders, sendTestNotification, request
 const C = TAB_COLORS.settings;
 
 export default function SettingsScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [reminderSettings, setReminderSettings] = useState<any>(DEFAULT_REMINDER_SETTINGS);
   const [goals, setGoals] = useState<any>(DEFAULT_GOALS);
@@ -32,6 +33,8 @@ export default function SettingsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
 
   const toggleNotifications = async (val: boolean) => {
     setNotifEnabled(val);
@@ -172,13 +175,13 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accentLight} />}>
       {/* Notifications */}
       <Card title="Notifications" accentColor={Colors.accentLight}>
         <View style={styles.settingRow}>
           <View style={styles.settingTextCol}>
             <Text style={styles.settingLabel}>Daily Reminders</Text>
-            <Text style={styles.settingDesc}>Water · Sleep · Skincare</Text>
+            <Text style={styles.settingDesc}>Water · Journal · Sleep · Skincare</Text>
           </View>
           <Switch
             value={notifEnabled}
@@ -317,6 +320,7 @@ export default function SettingsScreen() {
         <FormField label="💧 Water interval (minutes)" value={notifEdits['waterIntervalMins'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterIntervalMins: v }))} keyboardType="number-pad" placeholder="90" />
         <FormField label="💧 Water start (HH:MM)" value={notifEdits['waterStart'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterStart: v }))} placeholder="09:00" />
         <FormField label="💧 Water end (HH:MM)" value={notifEdits['waterEnd'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterEnd: v }))} placeholder="22:00" />
+        <FormField label="📓 Journal reminder (HH:MM)" value={notifEdits['journalTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, journalTime: v }))} placeholder="22:45" />
         <FormField label="😴 Sleep wind-down (HH:MM)" value={notifEdits['sleepReminder'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, sleepReminder: v }))} placeholder="23:00" />
         <FormField label="✨ Skincare reminder (HH:MM)" value={notifEdits['skincareTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, skincareTime: v }))} placeholder="07:00" />
         <View style={styles.modalBtns}>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
 import { Colors, SKILL_LIST as DEFAULT_SKILL_LIST, TAB_COLORS } from '../../src/constants/theme';
@@ -26,6 +26,7 @@ function getSkillEmoji(skill: string): string {
 
 export default function SkillsScreen() {
   const [logDate, setLogDate] = useState(TODAY());
+  const [refreshing, setRefreshing] = useState(false);
   const [skillList, setSkillList] = useState<string[]>(DEFAULT_SKILL_LIST);
   const [logs, setLogs] = useState<SkillLog[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -52,6 +53,8 @@ export default function SkillsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
 
   const adjustSkill = async (skill: string, delta: number) => {
     const current = [...logs];
@@ -127,7 +130,7 @@ export default function SkillsScreen() {
   const recentLogs = [...logs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
       {/* Date Navigator */}
       <View style={styles.dateNav}>
         <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>

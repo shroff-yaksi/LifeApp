@@ -69,6 +69,17 @@ export async function scheduleAllReminders(): Promise<boolean> {
     },
   });
 
+  // Journal reminder
+  const [jH, jM] = (s.journalTime as string).split(':').map(Number);
+  await Notifications.scheduleNotificationAsync({
+    content: { title: '📓 Journal Time', body: "Take 5 minutes to reflect on your day. How did it go?", sound: true },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: jH,
+      minute: jM,
+    },
+  });
+
   return true;
 }
 

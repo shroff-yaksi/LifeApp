@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, CATEGORY_COLORS, TAB_COLORS } from '../../src/constants/theme';
 import { TODAY, getDayType, formatTime12, timeToMin, NOW_MINUTES, uid, getWeekStart, addDays } from '../../src/utils/helpers';
@@ -16,6 +16,7 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function ScheduleScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completion, setCompletion] = useState<Record<string, any>>({});
   const [catchupItems, setCatchupItems] = useState<{ date: string; task: Task }[]>([]);
@@ -56,6 +57,8 @@ export default function ScheduleScreen() {
   }, [todayType]);
 
   useFocusEffect(useCallback(() => { loadData(); loadCatchup(); }, [loadData, loadCatchup]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await Promise.all([loadData(), loadCatchup()]); setRefreshing(false); }, [loadData, loadCatchup]);
 
   const toggleDone = async (id: string) => {
     const comp = { ...completion };
@@ -98,7 +101,7 @@ export default function ScheduleScreen() {
   const categories = ['fitness', 'work', 'learning', 'personal', 'meal', 'sleep', 'date', 'skill'];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
 
       {/* ── TODAY HEADER ─────────────────────────────────────── */}
       <View style={styles.todayHeader}>

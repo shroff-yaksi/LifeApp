@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Text, View, TouchableOpacity } from 'react-native';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
 
 const TAB_EMOJIS: Record<string, string> = {
@@ -37,6 +37,18 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   );
 }
 
+function TimerButton() {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/timer')}
+      style={{ marginRight: 14, width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.accentBg, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Text style={{ fontSize: 18 }}>🍅</Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function TabLayout() {
   return (
     <Tabs
@@ -44,6 +56,7 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: Colors.bg, elevation: 0, shadowOpacity: 0 },
         headerTintColor: Colors.accentLight,
         headerTitleStyle: { fontWeight: '800', fontSize: 17, letterSpacing: -0.3, color: Colors.text },
+        headerRight: () => <TimerButton />,
         tabBarStyle: {
           backgroundColor: Colors.card,
           borderTopColor: Colors.border,

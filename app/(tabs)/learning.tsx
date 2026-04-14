@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
 import { Colors, LEARNING_ROTATION, TAB_COLORS } from '../../src/constants/theme';
@@ -19,6 +19,7 @@ type StudyLog = { id: string; domainId: string; domainName: string; hours: numbe
 
 export default function LearningScreen() {
   const [logDate, setLogDate] = useState(TODAY());
+  const [refreshing, setRefreshing] = useState(false);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [logs, setLogs] = useState<StudyLog[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,6 +40,8 @@ export default function LearningScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
 
   const prevDay = () => setLogDate(d => addDays(d, -1));
   const nextDay = () => { if (logDate < TODAY()) setLogDate(d => addDays(d, 1)); };
@@ -107,7 +110,7 @@ export default function LearningScreen() {
   const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
       {/* Date Navigator */}
       <View style={styles.dateNav}>
         <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>

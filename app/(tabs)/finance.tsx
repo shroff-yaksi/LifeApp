@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
 import { TODAY, uid } from '../../src/utils/helpers';
@@ -39,6 +39,7 @@ function getDaysOfMonth(monthKey: string): string[] {
 }
 
 export default function FinanceScreen() {
+  const [refreshing, setRefreshing] = useState(false);
   const [todayExpenses, setTodayExpenses] = useState<any[]>([]);
   const [monthlyTotals, setMonthlyTotals] = useState<Record<string, number>>({});
   const [monthlyBudget, setMonthlyBudget] = useState<Record<string, number>>({});
@@ -70,6 +71,8 @@ export default function FinanceScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
 
   const addExpense = async () => {
     const a = parseFloat(amount);
@@ -141,7 +144,7 @@ export default function FinanceScreen() {
   const monthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
       {/* Net Worth Hero */}
       <Card accentColor={C}>
         <View style={styles.nwHero}>

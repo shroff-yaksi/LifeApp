@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { Colors, DEFAULT_MEAL_TIMINGS, TAB_COLORS } from '../../src/constants/theme';
@@ -62,6 +62,9 @@ export default function FitnessScreen() {
     setMeals(m[date] || {});
     setCigCount((await getData<any[]>('cigLog_' + date, [])).length);
   }, []);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => { setRefreshing(true); await Promise.all([loadGlobal(), loadForDate(logDate)]); setRefreshing(false); }, [loadGlobal, loadForDate, logDate]);
 
   useFocusEffect(useCallback(() => { loadGlobal(); loadForDate(logDate); }, [loadGlobal, loadForDate, logDate]));
   useEffect(() => { loadForDate(logDate); }, [logDate, loadForDate]);
@@ -155,7 +158,7 @@ export default function FitnessScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
       {/* Date Navigator */}
       <View style={styles.dateNav}>
         <TouchableOpacity style={styles.dateNavBtn} onPress={prevDay}>

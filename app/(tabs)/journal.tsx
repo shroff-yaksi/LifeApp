@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
 import { TODAY, addDays } from '../../src/utils/helpers';
@@ -20,6 +20,7 @@ const MOODS = [
 
 export default function JournalScreen() {
   const [date, setDate] = useState(TODAY());
+  const [refreshing, setRefreshing] = useState(false);
   const [entry, setEntry] = useState<JournalEntry>({});
   const [history, setHistory] = useState<{ date: string; mood?: number; preview: string }[]>([]);
 
@@ -35,6 +36,8 @@ export default function JournalScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { loadEntry(date); }, [date, loadEntry]));
+
+  const onRefresh = useCallback(async () => { setRefreshing(true); await loadEntry(date); setRefreshing(false); }, [loadEntry, date]);
 
   const updateNotes = async (value: string) => {
     const updated = { ...entry, notes: value, updatedAt: new Date().toISOString() };
@@ -53,7 +56,7 @@ export default function JournalScreen() {
   const currentMood = MOODS.find(m => m.level === entry.mood);
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
       {/* Main Journal Card */}
       <Card accentColor={C}>
         {/* Date Navigation */}
