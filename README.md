@@ -115,4 +115,4 @@ All data is stored on-device using AsyncStorage. Nothing is ever sent anywhere. 
 
 ## License
 
-MIT — use it, fork it, make it yours.
+MIT - use it, fork it, make it yours.
