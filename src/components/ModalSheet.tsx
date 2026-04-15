@@ -16,13 +16,10 @@ export function ModalSheet({ visible, onClose, title, children, accentColor }: P
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheet}>
-          <View style={[styles.handle, accentColor && { backgroundColor: accentColor + '60' }]} />
+          <View style={styles.handle} />
           <View style={styles.header}>
-            <View style={styles.titleRow}>
-              {accentColor && <View style={[styles.titleDot, { backgroundColor: accentColor }]} />}
-              <Text style={styles.title}>{title}</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.6}>
               <Text style={styles.close}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -37,17 +34,21 @@ export function ModalSheet({ visible, onClose, title, children, accentColor }: P
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.75)' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.8)' },
   sheet: {
     backgroundColor: Colors.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: Colors.border,
     paddingBottom: 40,
     maxHeight: '88%',
   },
   handle: {
-    width: 44,
-    height: 4,
+    width: 36,
+    height: 3,
     backgroundColor: Colors.surfaceHighest,
     borderRadius: 2,
     alignSelf: 'center',
@@ -58,30 +59,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  titleDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  title: { color: Colors.text, fontSize: 19, fontWeight: '800', letterSpacing: -0.4 },
+  title: { color: Colors.text, fontSize: 15, fontWeight: '600', letterSpacing: -0.2 },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  close: { color: Colors.textMuted, fontSize: 14, fontWeight: '700' },
-  body: { paddingHorizontal: 24, paddingTop: 16 },
+  close: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+  body: { paddingHorizontal: 20, paddingTop: 16 },
 });

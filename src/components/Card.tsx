@@ -14,22 +14,16 @@ type Props = {
 
 export function Card({ title, badge, badgeColor, headerRight, children, style, accentColor }: Props) {
   return (
-    <View style={[
-      styles.card,
-      accentColor
-        ? { borderColor: Colors.border, borderTopColor: accentColor, borderTopWidth: 2 }
-        : {},
-      style,
-    ]}>
+    <View style={[styles.card, style]}>
       {(title || headerRight) && (
         <View style={styles.header}>
           <View style={styles.titleRow}>
             {accentColor && (
-              <View style={[styles.dot, { backgroundColor: accentColor, shadowColor: accentColor, shadowOpacity: 0.8, shadowRadius: 4 }]} />
+              <View style={[styles.accent, { backgroundColor: accentColor }]} />
             )}
             {title ? <Text style={styles.title}>{title}</Text> : null}
             {badge ? (
-              <View style={[styles.badgeContainer, { backgroundColor: (badgeColor || Colors.orange) + '22' }]}>
+              <View style={[styles.badgeContainer, { backgroundColor: (badgeColor || Colors.orange) + '18' }]}>
                 <Text style={[styles.badge, { color: badgeColor || Colors.orange }]}>{badge}</Text>
               </View>
             ) : null}
@@ -45,9 +39,9 @@ export function Card({ title, badge, badgeColor, headerRight, children, style, a
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -55,32 +49,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  accent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+    opacity: 0.7,
   },
   title: {
     color: Colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   badgeContainer: {
-    borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
   },
   badge: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '600',
     overflow: 'hidden',
   },
 });

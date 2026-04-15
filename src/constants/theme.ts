@@ -1,69 +1,123 @@
 export const Colors = {
-  // Surface hierarchy
-  bg: '#0d0d10',
-  sidebarBg: '#0a0a0c',
-  card: '#1a1a1f',
-  cardHover: '#202027',
-  surface: '#202027',
-  surfaceHigh: '#27272e',
-  surfaceHighest: '#32323b',
+  // Surface hierarchy — true OLED blacks
+  bg: '#090909',
+  sidebarBg: '#050505',
+  card: '#111111',
+  cardHover: '#161616',
+  surface: '#161616',
+  surfaceHigh: '#1c1c1c',
+  surfaceHighest: '#242424',
 
-  // Ghost borders
-  border: 'rgba(255,255,255,0.09)',
-  borderHover: 'rgba(255,255,255,0.16)',
+  // Ghost borders — barely-there
+  border: 'rgba(255,255,255,0.06)',
+  borderHover: 'rgba(255,255,255,0.10)',
 
-  // Typography
-  text: '#f1eef5',
-  textSecondary: '#c4c0d8',
-  textMuted: '#8a8898',
+  // Typography — neutral (no purple tint)
+  text: '#ededed',
+  textSecondary: '#999999',
+  textMuted: '#4d4d4d',
 
-  // Primary accent — Indigo/Lavender
-  accent: '#6366f1',
-  accentLight: '#a5b4fc',
-  accentGlow: 'rgba(99,102,241,0.25)',
-  accentBg: 'rgba(99,102,241,0.12)',
+  // Primary accent — Linear blue-purple
+  accent: '#5E6AD2',
+  accentLight: '#8b95e0',
+  accentGlow: 'rgba(94,106,210,0.12)',
+  accentBg: 'rgba(94,106,210,0.08)',
 
-  // Semantic palette — more vibrant
-  green: '#22c55e',
-  greenBg: 'rgba(34,197,94,0.12)',
-  red: '#f87171',
-  redBg: 'rgba(248,113,113,0.12)',
-  orange: '#fb923c',
-  orangeBg: 'rgba(251,146,60,0.12)',
-  purple: '#a78bfa',
-  purpleBg: 'rgba(167,139,250,0.12)',
-  pink: '#f472b6',
-  pinkBg: 'rgba(244,114,182,0.12)',
-  yellow: '#fbbf24',
-  yellowBg: 'rgba(251,191,36,0.12)',
-  cyan: '#22d3ee',
-  cyanBg: 'rgba(34,211,238,0.12)',
-  teal: '#2dd4bf',
-  tealBg: 'rgba(45,212,191,0.12)',
+  // Semantic palette — muted, desaturated
+  green: '#3aa870',
+  greenBg: 'rgba(58,168,112,0.08)',
+  red: '#d95f5f',
+  redBg: 'rgba(217,95,95,0.08)',
+  orange: '#c4783a',
+  orangeBg: 'rgba(196,120,58,0.08)',
+  purple: '#9580d1',
+  purpleBg: 'rgba(149,128,209,0.08)',
+  pink: '#b06090',
+  pinkBg: 'rgba(176,96,144,0.08)',
+  yellow: '#b8952a',
+  yellowBg: 'rgba(184,149,42,0.08)',
+  cyan: '#2aabba',
+  cyanBg: 'rgba(42,171,186,0.08)',
+  teal: '#2b9e8f',
+  tealBg: 'rgba(43,158,143,0.08)',
 };
 
-// Per-tab signature colors
+// Per-tab full palette — accent + 4 hues for monochromatic detailing
+export type TabPalette = {
+  accent: string;  // main color
+  text:   string;  // lighter, for labels/values
+  bg:     string;  // subtle background (8%)
+  bgMid:  string;  // mid background (16%)
+  border: string;  // subtle border (20%)
+};
+
+export const TAB_PALETTE: Record<string, TabPalette> = {
+  index: {
+    accent: '#5E6AD2',
+    text:   '#8b95e0',
+    bg:     'rgba(94,106,210,0.08)',
+    bgMid:  'rgba(94,106,210,0.16)',
+    border: 'rgba(94,106,210,0.22)',
+  },
+  tasks: {
+    accent: '#4E8DB8',
+    text:   '#7ab0d0',
+    bg:     'rgba(78,141,184,0.08)',
+    bgMid:  'rgba(78,141,184,0.16)',
+    border: 'rgba(78,141,184,0.22)',
+  },
+  fitness: {
+    accent: '#3aa870',
+    text:   '#6dc49a',
+    bg:     'rgba(58,168,112,0.08)',
+    bgMid:  'rgba(58,168,112,0.16)',
+    border: 'rgba(58,168,112,0.22)',
+  },
+  learning: {
+    accent: '#c4783a',
+    text:   '#d99a6a',
+    bg:     'rgba(196,120,58,0.08)',
+    bgMid:  'rgba(196,120,58,0.16)',
+    border: 'rgba(196,120,58,0.22)',
+  },
+  skills: {
+    accent: '#b06090',
+    text:   '#cc8fb0',
+    bg:     'rgba(176,96,144,0.08)',
+    bgMid:  'rgba(176,96,144,0.16)',
+    border: 'rgba(176,96,144,0.22)',
+  },
+  settings: {
+    accent: '#606060',
+    text:   '#909090',
+    bg:     'rgba(96,96,96,0.08)',
+    bgMid:  'rgba(96,96,96,0.16)',
+    border: 'rgba(96,96,96,0.22)',
+  },
+};
+
+// Per-tab signature colors — muted, professional
 export const TAB_COLORS: Record<string, string> = {
-  index:     '#6366f1', // indigo
-  tasks:     '#3b82f6', // blue
-  fitness:   '#22c55e', // green
-  learning:  '#fb923c', // orange
-  skills:    '#f472b6', // pink
-  journal:   '#f472b6', // pink
-  finance:   '#2dd4bf', // teal
-  analytics: '#a78bfa', // purple
-  settings:  '#94a3b8', // slate
+  index:     '#5E6AD2', // Linear indigo
+  tasks:     '#4E8DB8', // muted blue
+  fitness:   '#3aa870', // muted green
+  learning:  '#c4783a', // muted orange
+  skills:    '#b06090', // muted pink
+  journal:   '#9580d1', // muted purple
+  finance:   '#2b9e8f', // muted teal
+  analytics: '#9580d1', // muted purple
+  settings:  '#606060', // neutral grey
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  fitness: '#22c55e',
-  work: '#6366f1',
-  learning: '#fb923c',
-  personal: '#f472b6',
-  meal: '#22d3ee',
-  sleep: '#a78bfa',
-  date: '#f472b6',
-  skill: '#fbbf24',
+  fitness: '#3aa870',
+  work: '#5E6AD2',
+  learning: '#c4783a',
+  personal: '#b06090',
+  meal: '#2aabba',
+  sleep: '#9580d1',
+  date: '#b06090',
+  skill: '#b8952a',
 };
 
 export const LEARNING_ROTATION: Record<number, string[]> = {

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
-import { Colors, LEARNING_ROTATION, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, LEARNING_ROTATION, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
 import { TODAY, addDays, getDayOfWeek, uid } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
@@ -12,6 +12,7 @@ import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 
 const C = TAB_COLORS.learning; // orange
+const P = TAB_PALETTE.learning;
 const screenW = Dimensions.get('window').width - 48;
 
 type Domain = { id: string; name: string };
@@ -180,13 +181,13 @@ export default function LearningScreen() {
           <>
             <Text style={styles.dayLabel}>{dow >= 1 && dow <= 5 ? DAY_NAMES[dow] : ''}</Text>
             {todayRotation.map((name, i) => (
-              <View key={i} style={[styles.rotCard, { borderLeftColor: i === 0 ? C : Colors.accentLight }]}>
+              <View key={i} style={[styles.rotCard, { borderLeftColor: i === 0 ? C : P.text }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rotTitle}>{name}</Text>
                   <Text style={styles.rotTime}>Block {i + 1}  ·  {i === 0 ? '9:00–9:40 PM' : '9:40–10:20 PM'}</Text>
                 </View>
-                <View style={[styles.blockBadge, { backgroundColor: (i === 0 ? C : Colors.accentLight) + '20' }]}>
-                  <Text style={[styles.blockBadgeTxt, { color: i === 0 ? C : Colors.accentLight }]}>B{i + 1}</Text>
+                <View style={[styles.blockBadge, { backgroundColor: i === 0 ? P.bgMid : P.bg }]}>
+                  <Text style={[styles.blockBadgeTxt, { color: i === 0 ? C : P.text }]}>B{i + 1}</Text>
                 </View>
               </View>
             ))}
@@ -219,7 +220,7 @@ export default function LearningScreen() {
       </Card>
 
       {/* Recent Study Log */}
-      <Card title="Recent Study Log" accentColor={Colors.green}>
+      <Card title="Recent Study Log" accentColor={C}>
         {recentLogs.length === 0 ? (
           <Text style={styles.emptyText}>No logs yet. Start studying and log your hours!</Text>
         ) : recentLogs.map(l => (

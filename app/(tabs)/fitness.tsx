@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
-import { Colors, DEFAULT_MEAL_TIMINGS, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, DEFAULT_MEAL_TIMINGS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
 import { TODAY, addDays, formatTime12, timeToMin, uid } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
@@ -11,6 +11,7 @@ import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 
 const C = TAB_COLORS.fitness; // green
+const P = TAB_PALETTE.fitness;
 const screenW = Dimensions.get('window').width - 48;
 
 const chartCfg = (color: string, hex: string) => ({
@@ -124,12 +125,12 @@ export default function FitnessScreen() {
 
   const weightData = weightLog.length >= 2 ? (() => {
     const sorted = [...weightLog].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
-    return { labels: sorted.map(w => w.date.slice(8)), datasets: [{ data: sorted.map(w => w.value), color: () => Colors.purple, strokeWidth: 2 }] };
+    return { labels: sorted.map(w => w.date.slice(8)), datasets: [{ data: sorted.map(w => w.value), color: () => C, strokeWidth: 2 }] };
   })() : null;
 
   const sleepData = sleepLog.length >= 2 ? (() => {
     const sorted = [...sleepLog].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
-    return { labels: sorted.map(s => s.date.slice(8)), datasets: [{ data: sorted.map(s => s.hours), color: () => Colors.cyan, strokeWidth: 2 }] };
+    return { labels: sorted.map(s => s.date.slice(8)), datasets: [{ data: sorted.map(s => s.hours), color: () => P.text, strokeWidth: 2 }] };
   })() : null;
 
   const currentWeight = weightLog.length ? weightLog[0].value : null;
@@ -208,33 +209,33 @@ export default function FitnessScreen() {
       {/* Body Stats — display only */}
       <Card title="Body Stats" accentColor={C}>
         <View style={styles.statsGrid}>
-          <View style={[styles.statBox, { borderColor: Colors.purple + '40', backgroundColor: Colors.purpleBg }]}>
+          <View style={[styles.statBox, { borderColor: P.border, backgroundColor: P.bg }]}>
             <Text style={styles.statBoxLabel}>WEIGHT</Text>
-            <Text style={[styles.statBoxVal, { color: Colors.purple }]}>{currentWeight ?? '–'}</Text>
+            <Text style={[styles.statBoxVal, { color: C }]}>{currentWeight ?? '–'}</Text>
             <Text style={styles.statBoxSub}>
               {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : 'kg'}
             </Text>
           </View>
-          <View style={[styles.statBox, { borderColor: Colors.textMuted + '40', backgroundColor: Colors.surface }]}>
+          <View style={[styles.statBox, { borderColor: Colors.border, backgroundColor: Colors.surface }]}>
             <Text style={styles.statBoxLabel}>TARGET</Text>
             <Text style={[styles.statBoxVal, { color: Colors.textSecondary }]}>{targetWeight || '–'}</Text>
             <Text style={styles.statBoxSub}>kg goal</Text>
           </View>
-          <View style={[styles.statBox, { borderColor: Colors.cyan + '40', backgroundColor: Colors.cyanBg }]}>
+          <View style={[styles.statBox, { borderColor: P.border, backgroundColor: P.bg }]}>
             <Text style={styles.statBoxLabel}>SLEEP</Text>
-            <Text style={[styles.statBoxVal, { color: Colors.cyan }]}>{lastSleep !== null ? lastSleep.toFixed(1) : '–'}</Text>
+            <Text style={[styles.statBoxVal, { color: P.text }]}>{lastSleep !== null ? lastSleep.toFixed(1) : '–'}</Text>
             <Text style={styles.statBoxSub}>last night</Text>
           </View>
-          <View style={[styles.statBox, { borderColor: Colors.accentLight + '40', backgroundColor: Colors.accentBg }]}>
+          <View style={[styles.statBox, { borderColor: P.border, backgroundColor: P.bgMid }]}>
             <Text style={styles.statBoxLabel}>AVG 7D</Text>
-            <Text style={[styles.statBoxVal, { color: Colors.accentLight }]}>{avg7Sleep !== null ? avg7Sleep.toFixed(1) : '–'}</Text>
+            <Text style={[styles.statBoxVal, { color: C }]}>{avg7Sleep !== null ? avg7Sleep.toFixed(1) : '–'}</Text>
             <Text style={styles.statBoxSub}>sleep hrs</Text>
           </View>
         </View>
       </Card>
 
       {/* Today's Meals */}
-      <Card title="Today's Meals" accentColor={Colors.orange}>
+      <Card title="Today's Meals" accentColor={C}>
         {(['breakfast', 'lunch', 'snack', 'dinner'] as const).map(type => (
           <View key={type} style={styles.mealSlot}>
             <Text style={styles.mealEmoji}>{mealEmojis[type]}</Text>
@@ -290,15 +291,15 @@ export default function FitnessScreen() {
 
       {/* Weekly Stats — Charts */}
       {weightData && (
-        <Card title="Weight Trend" accentColor={Colors.purple}>
+        <Card title="Weight Trend" accentColor={C}>
           <LineChart data={weightData} width={screenW} height={180}
-            chartConfig={chartCfg(Colors.purple, 'rgba(167,139,250,1)')} bezier style={{ borderRadius: 12, overflow: 'hidden' }} />
+            chartConfig={chartCfg(C, 'rgba(58,168,112,1)')} bezier style={{ borderRadius: 10, overflow: 'hidden' }} />
         </Card>
       )}
       {sleepData && (
-        <Card title="Sleep Trend" accentColor={Colors.cyan}>
+        <Card title="Sleep Trend" accentColor={P.text}>
           <LineChart data={sleepData} width={screenW} height={180}
-            chartConfig={chartCfg(Colors.cyan, 'rgba(34,211,238,1)')} bezier style={{ borderRadius: 12, overflow: 'hidden' }} />
+            chartConfig={chartCfg(P.text, 'rgba(109,196,154,1)')} bezier style={{ borderRadius: 10, overflow: 'hidden' }} />
         </Card>
       )}
 
@@ -312,16 +313,16 @@ export default function FitnessScreen() {
       <ModalSheet visible={manageModal} onClose={() => setManageModal(false)} title="Manage Fitness" accentColor={C}>
         <Text style={styles.manageSection}>Log Data</Text>
         <View style={styles.manageActions}>
-          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.purple + '40' }]} onPress={() => { setManageModal(false); setWDate(TODAY()); setWValue(''); setWeightModal(true); }}>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: P.border, backgroundColor: P.bg }]} onPress={() => { setManageModal(false); setWDate(TODAY()); setWValue(''); setWeightModal(true); }}>
             <Text style={styles.manageActionIcon}>⚖️</Text>
-            <Text style={[styles.manageActionLabel, { color: Colors.purple }]}>Log Weight</Text>
+            <Text style={[styles.manageActionLabel, { color: C }]}>Log Weight</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.cyan + '40' }]} onPress={() => { setManageModal(false); setSDate(TODAY()); setSBedtime(''); setSWaketime(''); setSleepModal(true); }}>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: P.border, backgroundColor: P.bg }]} onPress={() => { setManageModal(false); setSDate(TODAY()); setSBedtime(''); setSWaketime(''); setSleepModal(true); }}>
             <Text style={styles.manageActionIcon}>😴</Text>
-            <Text style={[styles.manageActionLabel, { color: Colors.cyan }]}>Log Sleep</Text>
+            <Text style={[styles.manageActionLabel, { color: P.text }]}>Log Sleep</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.red + '40' }]} onPress={() => { setManageModal(false); setDevModal(true); }}>
-            <Text style={styles.manageActionIcon}>🍕</Text>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.red + '30', backgroundColor: Colors.redBg }]} onPress={() => { setManageModal(false); setDevModal(true); }}>
+            <Text style={styles.manageActionIcon}>⚠️</Text>
             <Text style={[styles.manageActionLabel, { color: Colors.red }]}>Log Deviation</Text>
           </TouchableOpacity>
         </View>

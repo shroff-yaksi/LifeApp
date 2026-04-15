@@ -2,13 +2,14 @@ import { Tabs, useRouter } from 'expo-router';
 import { Text, View, TouchableOpacity } from 'react-native';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
 
-const TAB_EMOJIS: Record<string, string> = {
-  Dashboard: '⚡',
-  Tasks:     '✅',
-  Fitness:   '💪',
-  Learning:  '📚',
-  Skills:    '🎸',
-  Settings:  '⚙️',
+// Minimal single-char glyphs — no emoji overload
+const TAB_GLYPHS: Record<string, string> = {
+  Dashboard: '⊹',
+  Tasks:     '◻',
+  Fitness:   '◈',
+  Learning:  '◎',
+  Skills:    '◇',
+  Settings:  '⊙',
 };
 
 const TAB_ROUTES: Record<string, string> = {
@@ -25,14 +26,28 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const color = TAB_COLORS[route] || Colors.accent;
   return (
     <View style={{
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+      width: 36,
+      height: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: focused ? color + '20' : 'transparent',
     }}>
-      <Text style={{ fontSize: 19 }}>{TAB_EMOJIS[label] || '•'}</Text>
+      {focused && (
+        <View style={{
+          position: 'absolute',
+          bottom: 0,
+          width: 16,
+          height: 2,
+          borderRadius: 1,
+          backgroundColor: color,
+        }} />
+      )}
+      <Text style={{
+        fontSize: 16,
+        color: focused ? color : Colors.textMuted,
+        lineHeight: 20,
+      }}>
+        {TAB_GLYPHS[label] || '·'}
+      </Text>
     </View>
   );
 }
@@ -42,9 +57,20 @@ function TimerButton() {
   return (
     <TouchableOpacity
       onPress={() => router.push('/timer')}
-      style={{ marginRight: 14, width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.accentBg, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        marginRight: 14,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: Colors.surface,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      activeOpacity={0.65}
     >
-      <Text style={{ fontSize: 18 }}>🍅</Text>
+      <Text style={{ fontSize: 14 }}>⏱</Text>
     </TouchableOpacity>
   );
 }
@@ -54,20 +80,20 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: Colors.bg, elevation: 0, shadowOpacity: 0 },
-        headerTintColor: Colors.accentLight,
-        headerTitleStyle: { fontWeight: '800', fontSize: 17, letterSpacing: -0.3, color: Colors.text },
+        headerTintColor: Colors.textSecondary,
+        headerTitleStyle: { fontWeight: '600', fontSize: 15, letterSpacing: -0.2, color: Colors.text },
         headerRight: () => <TimerButton />,
         tabBarStyle: {
           backgroundColor: Colors.card,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 78,
-          paddingTop: 6,
-          paddingBottom: 6,
+          height: 68,
+          paddingTop: 8,
+          paddingBottom: 8,
         },
         tabBarActiveTintColor: Colors.text,
         tabBarInactiveTintColor: Colors.textMuted,
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '700', marginTop: 1, letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: '500', marginTop: 2, letterSpacing: 0.3 },
       }}
     >
       <Tabs.Screen
@@ -118,7 +144,7 @@ export default function TabLayout() {
           tabBarActiveTintColor: TAB_COLORS.settings,
         }}
       />
-      {/* Hidden routes — not in tab bar */}
+      {/* Hidden routes */}
       <Tabs.Screen name="analytics" options={{ href: null }} />
       <Tabs.Screen name="journal" options={{ href: null }} />
       <Tabs.Screen name="finance" options={{ href: null }} />

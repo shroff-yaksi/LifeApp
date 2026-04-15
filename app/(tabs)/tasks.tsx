@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Colors, DEFAULT_HABITS, CATEGORY_COLORS, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, DEFAULT_HABITS, CATEGORY_COLORS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
 import { TODAY, getDayType, formatTime12, timeToMin, NOW_MINUTES, uid, addDays, getWeekStart } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
@@ -10,6 +10,7 @@ import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 
 const C = TAB_COLORS.tasks; // blue
+const P = TAB_PALETTE.tasks;
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -194,17 +195,17 @@ export default function TasksScreen() {
       <Card
         title="Daily Habits"
         badge={`${habitDone}/${habits.length}`}
-        badgeColor={Colors.green}
-        accentColor={Colors.green}
+        badgeColor={C}
+        accentColor={C}
       >
         {habits.map(h => {
           const done = !!habitData[h];
           return (
             <TouchableOpacity key={h} style={styles.habitRow} onPress={() => toggleHabit(h)} activeOpacity={0.7}>
-              <View style={[styles.habitCheck, done && { backgroundColor: Colors.green, borderColor: Colors.green }]}>
+              <View style={[styles.habitCheck, done && { backgroundColor: C, borderColor: C }]}>
                 {done && <Text style={styles.habitCheckMark}>✓</Text>}
               </View>
-              <Text style={[styles.habitName, done && { color: Colors.green, textDecorationLine: 'line-through' }]}>{h}</Text>
+              <Text style={[styles.habitName, done && { color: P.text, textDecorationLine: 'line-through' }]}>{h}</Text>
             </TouchableOpacity>
           );
         })}
@@ -212,7 +213,7 @@ export default function TasksScreen() {
 
       {/* ── SUNDAY CATCHUP ───────────────────────────────────── */}
       {catchupItems.length > 0 && (
-        <Card title="Week's Leftover" badge={`${catchupItems.length}`} badgeColor={Colors.orange} accentColor={Colors.orange}>
+        <Card title="Week's Leftover" badge={`${catchupItems.length}`} badgeColor={C} accentColor={C}>
           {catchupItems.map((item, i) => {
             const col = CATEGORY_COLORS[item.task.category] || C;
             return (

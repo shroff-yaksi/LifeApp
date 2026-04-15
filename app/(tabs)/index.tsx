@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
 import { TODAY, addDays, getDayType, formatTime12, timeToMin, NOW_MINUTES } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { getBacklogItems } from '../../src/utils/aggregates';
@@ -9,6 +9,7 @@ import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 
 const C = TAB_COLORS.index;
+const P = TAB_PALETTE.index;
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -125,10 +126,10 @@ export default function DashboardScreen() {
             <Text style={styles.bannerGreeting}>{greeting}</Text>
             <Text style={styles.bannerSub}>Let's make today count</Text>
           </View>
-          <View style={[styles.streakBadge, { borderColor: Colors.orange + '50' }]}>
+          <View style={[styles.streakBadge, { borderColor: P.border, backgroundColor: P.bg }]}>
             <Text style={styles.streakFire}>🔥</Text>
-            <Text style={styles.streakNum}>{streak}</Text>
-            <Text style={styles.streakLabel}>day streak</Text>
+            <Text style={[styles.streakNum, { color: C }]}>{streak}</Text>
+            <Text style={[styles.streakLabel, { color: P.text }]}>day streak</Text>
           </View>
         </View>
 
@@ -136,14 +137,14 @@ export default function DashboardScreen() {
         <View style={styles.progressSection}>
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>Habits</Text>
-            <Text style={[styles.progressPct, { color: Colors.green }]}>{habitDone}/{habits.length}</Text>
+            <Text style={[styles.progressPct, { color: P.text }]}>{habitDone}/{habits.length}</Text>
           </View>
-          <ProgressBar progress={habitPct} color={Colors.green} height={5} />
+          <ProgressBar progress={habitPct} color={P.text} height={4} />
           <View style={[styles.progressRow, { marginTop: 10 }]}>
             <Text style={styles.progressLabel}>Schedule</Text>
             <Text style={[styles.progressPct, { color: C }]}>{doneTasks}/{tasks.length}</Text>
           </View>
-          <ProgressBar progress={schedPct} color={C} height={5} />
+          <ProgressBar progress={schedPct} color={C} height={4} />
         </View>
       </View>
 
@@ -179,42 +180,42 @@ export default function DashboardScreen() {
       </Card>
 
       {/* ── QUICK TRACKING ───────────────────────────────────── */}
-      <Card title="Quick Tracking" accentColor={Colors.cyan}>
+      <Card title="Quick Tracking" accentColor={C}>
         <View style={styles.trackerGrid}>
-          <View style={[styles.trackerBox, { borderColor: Colors.cyan + '40', backgroundColor: Colors.cyanBg }]}>
+          <View style={[styles.trackerBox, { borderColor: P.border, backgroundColor: P.bg }]}>
             <Text style={styles.trackerBoxIcon}>💧</Text>
-            <Text style={[styles.trackerBoxVal, { color: Colors.cyan }]}>{water}</Text>
+            <Text style={[styles.trackerBoxVal, { color: C }]}>{water}</Text>
             <Text style={styles.trackerBoxLabel}>glasses</Text>
             <View style={styles.trackerBtns}>
               <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.surface }]} onPress={() => adjustWater(-1)}>
                 <Text style={styles.trackerBtnTxt}>−</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.cyan + '30' }]} onPress={() => adjustWater(1)}>
-                <Text style={[styles.trackerBtnTxt, { color: Colors.cyan }]}>+</Text>
+              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: P.bgMid }]} onPress={() => adjustWater(1)}>
+                <Text style={[styles.trackerBtnTxt, { color: C }]}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={[styles.trackerBox, { borderColor: (cigs > 0 ? Colors.red : Colors.green) + '40', backgroundColor: cigs > 0 ? Colors.redBg : Colors.greenBg }]}>
+          <View style={[styles.trackerBox, { borderColor: cigs > 0 ? Colors.red + '40' : P.border, backgroundColor: cigs > 0 ? Colors.redBg : P.bg }]}>
             <Text style={styles.trackerBoxIcon}>🚬</Text>
-            <Text style={[styles.trackerBoxVal, { color: cigs > 0 ? Colors.red : Colors.green }]}>{cigs}</Text>
+            <Text style={[styles.trackerBoxVal, { color: cigs > 0 ? Colors.red : P.text }]}>{cigs}</Text>
             <Text style={styles.trackerBoxLabel}>{cigTimer || 'clean today'}</Text>
             <View style={styles.trackerBtns}>
               <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.surface }]} onPress={() => adjustCigs(-1)}>
                 <Text style={styles.trackerBtnTxt}>−</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.red + '30' }]} onPress={() => adjustCigs(1)}>
+              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.red + '25' }]} onPress={() => adjustCigs(1)}>
                 <Text style={[styles.trackerBtnTxt, { color: Colors.red }]}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={[styles.trackerBox, { borderColor: Colors.orange + '40', backgroundColor: Colors.orangeBg }]}>
-            <Text style={styles.trackerBoxIcon}>🍅</Text>
-            <Text style={[styles.trackerBoxVal, { color: Colors.orange }]}>{pomodoroCount}</Text>
+          <View style={[styles.trackerBox, { borderColor: P.border, backgroundColor: P.bg }]}>
+            <Text style={styles.trackerBoxIcon}>⏱</Text>
+            <Text style={[styles.trackerBoxVal, { color: P.text }]}>{pomodoroCount}</Text>
             <Text style={styles.trackerBoxLabel}>sessions</Text>
-            <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.orange + '30', paddingHorizontal: 16, marginTop: 4 }]} onPress={() => router.push('/timer')}>
-              <Text style={[styles.trackerBtnTxt, { color: Colors.orange, fontSize: 10 }]}>START</Text>
+            <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: P.bgMid, paddingHorizontal: 16, marginTop: 4 }]} onPress={() => router.push('/timer')}>
+              <Text style={[styles.trackerBtnTxt, { color: C, fontSize: 10 }]}>START</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -249,10 +250,10 @@ const styles = StyleSheet.create({
   bannerEmoji: { fontSize: 28, marginBottom: 6 },
   bannerGreeting: { color: Colors.text, fontSize: 27, fontWeight: '800', letterSpacing: -0.5 },
   bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 3 },
-  streakBadge: { backgroundColor: Colors.orange + '12', borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, alignItems: 'center' },
-  streakFire: { fontSize: 22 },
-  streakNum: { color: Colors.orange, fontSize: 22, fontWeight: '800', lineHeight: 26 },
-  streakLabel: { color: Colors.orange + 'aa', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  streakBadge: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, alignItems: 'center' },
+  streakFire: { fontSize: 18 },
+  streakNum: { fontSize: 22, fontWeight: '700', lineHeight: 26 },
+  streakLabel: { fontSize: 9, fontWeight: '600', letterSpacing: 0.5 },
   progressSection: { gap: 4 },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   progressLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
