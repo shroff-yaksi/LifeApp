@@ -11,7 +11,7 @@ import { ProgressBar } from '../../src/components/ProgressBar';
 import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 
-const C = TAB_COLORS.skills; // yellow
+const C = TAB_COLORS.skills; // pink
 const screenW = Dimensions.get('window').width - 48;
 
 type SkillLog = { id: string; skill: string; hours: number; notes: string; date: string; createdAt: string };
@@ -32,6 +32,7 @@ export default function SkillsScreen() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [practiceModal, setPracticeModal] = useState(false);
   const [assessModal, setAssessModal] = useState(false);
+  const [manageModal, setManageModal] = useState(false);
   const [selSkill, setSelSkill] = useState('');
   const [hours, setHours] = useState('');
   const [notes, setNotes] = useState('');
@@ -200,31 +201,6 @@ export default function SkillsScreen() {
         })}
       </Card>
 
-      {/* Manage Skills */}
-      <Card title="Manage Skills" accentColor={Colors.accentLight}>
-        <View style={styles.addRow}>
-          <TextInput
-            style={styles.addInput}
-            value={newSkill}
-            onChangeText={setNewSkill}
-            placeholder="Add new skill..."
-            placeholderTextColor={Colors.textMuted}
-            onSubmitEditing={addSkill}
-            returnKeyType="done"
-          />
-          <Button title="+ Add" size="sm" color={C} onPress={addSkill} />
-        </View>
-        {skillList.map(s => (
-          <View key={s} style={styles.skillItem}>
-            <Text style={{ fontSize: 16, marginRight: 8 }}>{getSkillEmoji(s)}</Text>
-            <Text style={styles.skillItemName}>{s}</Text>
-            <TouchableOpacity onPress={() => removeSkill(s)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ color: Colors.red, fontSize: 16 }}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </Card>
-
       {/* Practice Log */}
       <Card title="Practice Log" accentColor={Colors.green}>
         {recentLogs.length === 0 ? (
@@ -255,7 +231,7 @@ export default function SkillsScreen() {
           chartConfig={{
             backgroundGradientFrom: Colors.surface,
             backgroundGradientTo: Colors.surface,
-            color: (op = 1) => `rgba(251,191,36,${op})`,
+            color: (op = 1) => `rgba(244,114,182,${op})`,
             labelColor: () => Colors.textMuted,
             decimalPlaces: 1,
             propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.04)' },
@@ -263,6 +239,12 @@ export default function SkillsScreen() {
           style={{ borderRadius: 12, overflow: 'hidden' }}
         />
       </Card>
+
+      {/* Manage Button */}
+      <TouchableOpacity style={styles.manageBtn} onPress={() => setManageModal(true)}>
+        <Text style={styles.manageBtnIcon}>⚙️</Text>
+        <Text style={styles.manageBtnText}>Manage</Text>
+      </TouchableOpacity>
 
       {/* Log Practice Modal */}
       <ModalSheet visible={practiceModal} onClose={() => setPracticeModal(false)} title="Log Skill Practice" accentColor={C}>
@@ -284,6 +266,34 @@ export default function SkillsScreen() {
         <View style={styles.modalActions}>
           <Button title="Cancel" variant="outline" onPress={() => setPracticeModal(false)} />
           <Button title="Save" onPress={savePractice} color={C} />
+        </View>
+      </ModalSheet>
+
+      {/* Manage Skills Modal */}
+      <ModalSheet visible={manageModal} onClose={() => setManageModal(false)} title="Manage Skills" accentColor={C}>
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.addInput}
+            value={newSkill}
+            onChangeText={setNewSkill}
+            placeholder="Add new skill..."
+            placeholderTextColor={Colors.textMuted}
+            onSubmitEditing={addSkill}
+            returnKeyType="done"
+          />
+          <Button title="+ Add" size="sm" color={C} onPress={addSkill} />
+        </View>
+        {skillList.map(s => (
+          <View key={s} style={styles.skillItem}>
+            <Text style={{ fontSize: 16, marginRight: 8 }}>{getSkillEmoji(s)}</Text>
+            <Text style={styles.skillItemName}>{s}</Text>
+            <TouchableOpacity onPress={() => removeSkill(s)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={{ color: Colors.red, fontSize: 16 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        <View style={styles.modalActions}>
+          <Button title="Done" onPress={() => setManageModal(false)} color={C} />
         </View>
       </ModalSheet>
 
@@ -360,4 +370,7 @@ const styles = StyleSheet.create({
   ratingBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   ratingBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: Colors.surfaceHighest, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
   ratingBtnText: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
+  manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.surface, borderRadius: 16, paddingVertical: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
+  manageBtnIcon: { fontSize: 18 },
+  manageBtnText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '700' },
 });

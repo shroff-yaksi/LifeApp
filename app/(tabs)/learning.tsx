@@ -17,16 +17,22 @@ const screenW = Dimensions.get('window').width - 48;
 type Domain = { id: string; name: string };
 type StudyLog = { id: string; domainId: string; domainName: string; hours: number; topic: string; date: string; createdAt: string };
 
+const DAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
 export default function LearningScreen() {
   const [logDate, setLogDate] = useState(TODAY());
   const [refreshing, setRefreshing] = useState(false);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [logs, setLogs] = useState<StudyLog[]>([]);
+  const [rotation, setRotation] = useState<Record<number, string[]>>(LEARNING_ROTATION);
   const [modalOpen, setModalOpen] = useState(false);
+  const [manageModal, setManageModal] = useState(false);
   const [selDomain, setSelDomain] = useState('');
   const [hours, setHours] = useState('');
   const [topic, setTopic] = useState('');
   const [newDomain, setNewDomain] = useState('');
+  // Rotation edit buffer: day -> [block1, block2]
+  const [rotEdit, setRotEdit] = useState<Record<number, string[]>>({});
 
   const defaultDomains = [
     { id: 'ld1', name: 'Stock Market' }, { id: 'ld2', name: 'Forex' },
@@ -37,18 +43,35 @@ export default function LearningScreen() {
   const loadData = useCallback(async () => {
     setDomains(await getData('learningDomains', defaultDomains));
     setLogs(await getData('studyLogs', []));
+    setRotation(await getData('learningRotation', LEARNING_ROTATION));
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
 
+  const openManage = () => {
+    // Deep copy rotation into edit buffer
+    const buf: Record<number, string[]> = {};
+    for (let d = 1; d <= 5; d++) buf[d] = [...(rotation[d] || ['', ''])];
+    setRotEdit(buf);
+    setManageModal(true);
+  };
+
+  const saveRotation = async () => {
+    const cleaned: Record<number, string[]> = {};
+    for (let d = 1; d <= 5; d++) cleaned[d] = (rotEdit[d] || ['', '']).map(s => s.trim()).filter(Boolean);
+    setRotation(cleaned);
+    await setData('learningRotation', cleaned);
+    setManageModal(false);
+  };
+
   const prevDay = () => setLogDate(d => addDays(d, -1));
   const nextDay = () => { if (logDate < TODAY()) setLogDate(d => addDays(d, 1)); };
   const dateLabel = logDate === TODAY() ? 'Today' : new Date(logDate + 'T12:00').toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const dow = getDayOfWeek(TODAY());
-  const rotation = dow >= 1 && dow <= 5 ? LEARNING_ROTATION[dow] : null;
+  const todayRotation = dow >= 1 && dow <= 5 ? rotation[dow] : null;
 
   const adjustStudy = async (domainId: string, domainName: string, delta: number) => {
     const current = [...logs];
@@ -70,7 +93,6 @@ export default function LearningScreen() {
     if (!selDomain) { Alert.alert('Select Course', 'Please select a course first.'); return; }
     if (!h || h <= 0) { Alert.alert('Invalid Hours', 'Enter a positive number of hours.'); return; }
     const domain = domains.find(d => d.id === selDomain);
-    // Add as a separate detailed log entry (doesn't merge with stepper)
     const updated = [...logs, { id: uid(), domainId: selDomain, domainName: domain?.name || '', hours: h, topic, date: TODAY(), createdAt: new Date().toISOString() }];
     setLogs(updated);
     await setData('studyLogs', updated);
@@ -107,7 +129,6 @@ export default function LearningScreen() {
   })();
 
   const recentLogs = [...logs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
-  const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
@@ -122,9 +143,9 @@ export default function LearningScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Study Hours for Selected Date */}
+      {/* Today's Learning — Study Hours */}
       <Card
-        title="Study Hours"
+        title="Today's Learning"
         accentColor={C}
         headerRight={
           <Button title="+ Notes" size="sm" variant="outline" color={C}
@@ -150,18 +171,15 @@ export default function LearningScreen() {
             </View>
           );
         })}
-        {domains.length === 0 && <Text style={styles.emptyText}>Add courses below to start tracking.</Text>}
+        {domains.length === 0 && <Text style={styles.emptyText}>Add courses in Manage to start tracking.</Text>}
       </Card>
 
       {/* Today's Rotation */}
-      <Card
-        title="Today's Rotation"
-        accentColor={C}
-      >
-        {rotation ? (
+      <Card title="Today's Rotation" accentColor={C}>
+        {todayRotation && todayRotation.length > 0 ? (
           <>
-            <Text style={styles.dayLabel}>{dow >= 1 && dow <= 7 ? dayNames[dow] : ''}</Text>
-            {rotation.map((name, i) => (
+            <Text style={styles.dayLabel}>{dow >= 1 && dow <= 5 ? DAY_NAMES[dow] : ''}</Text>
+            {todayRotation.map((name, i) => (
               <View key={i} style={[styles.rotCard, { borderLeftColor: i === 0 ? C : Colors.accentLight }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rotTitle}>{name}</Text>
@@ -184,7 +202,7 @@ export default function LearningScreen() {
       {/* Study Progress */}
       <Card title="Study Progress" accentColor={C}>
         {domains.length === 0 ? (
-          <Text style={styles.emptyText}>No courses yet. Add courses below.</Text>
+          <Text style={styles.emptyText}>No courses yet. Add courses in Manage.</Text>
         ) : domains.map(d => {
           const th = logs.filter(l => l.domainId === d.id).reduce((s, l) => s + l.hours, 0);
           const pct = Math.min(100, (th / 50) * 100);
@@ -200,32 +218,7 @@ export default function LearningScreen() {
         })}
       </Card>
 
-      {/* Manage Courses */}
-      <Card title="Manage Courses" accentColor={Colors.accentLight}>
-        <View style={styles.addRow}>
-          <TextInput
-            style={styles.addInput}
-            value={newDomain}
-            onChangeText={setNewDomain}
-            placeholder="New course name..."
-            placeholderTextColor={Colors.textMuted}
-            onSubmitEditing={addDomainFn}
-            returnKeyType="done"
-          />
-          <Button title="+ Add" size="sm" color={C} onPress={addDomainFn} />
-        </View>
-        {domains.map(d => (
-          <View key={d.id} style={styles.courseItem}>
-            <View style={[styles.courseDot, { backgroundColor: C }]} />
-            <Text style={styles.courseName}>{d.name}</Text>
-            <TouchableOpacity onPress={() => deleteDomain(d.id, d.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ color: Colors.red, fontSize: 16 }}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </Card>
-
-      {/* Recent Logs */}
+      {/* Recent Study Log */}
       <Card title="Recent Study Log" accentColor={Colors.green}>
         {recentLogs.length === 0 ? (
           <Text style={styles.emptyText}>No logs yet. Start studying and log your hours!</Text>
@@ -264,6 +257,12 @@ export default function LearningScreen() {
         />
       </Card>
 
+      {/* Manage Button */}
+      <TouchableOpacity style={styles.manageBtn} onPress={openManage}>
+        <Text style={styles.manageBtnIcon}>⚙️</Text>
+        <Text style={styles.manageBtnText}>Manage</Text>
+      </TouchableOpacity>
+
       {/* Log Hours Modal */}
       <ModalSheet visible={modalOpen} onClose={() => setModalOpen(false)} title="Log Study Hours" accentColor={C}>
         <FormField label="Course">
@@ -286,6 +285,65 @@ export default function LearningScreen() {
           <Button title="Save" onPress={saveLog} color={C} />
         </View>
       </ModalSheet>
+
+      {/* Manage Modal */}
+      <ModalSheet visible={manageModal} onClose={() => setManageModal(false)} title="Manage Learning" accentColor={C}>
+        {/* Manage Courses */}
+        <Text style={styles.manageSection}>Courses</Text>
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.addInput}
+            value={newDomain}
+            onChangeText={setNewDomain}
+            placeholder="New course name..."
+            placeholderTextColor={Colors.textMuted}
+            onSubmitEditing={addDomainFn}
+            returnKeyType="done"
+          />
+          <Button title="+ Add" size="sm" color={C} onPress={addDomainFn} />
+        </View>
+        {domains.map(d => (
+          <View key={d.id} style={styles.courseItem}>
+            <View style={[styles.courseDot, { backgroundColor: C }]} />
+            <Text style={styles.courseName}>{d.name}</Text>
+            <TouchableOpacity onPress={() => deleteDomain(d.id, d.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={{ color: Colors.red, fontSize: 16 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* Rotation Editor */}
+        <Text style={[styles.manageSection, { marginTop: 20 }]}>Weekly Rotation</Text>
+        {[1, 2, 3, 4, 5].map(d => (
+          <View key={d} style={styles.rotEditRow}>
+            <Text style={styles.rotEditDay}>{DAY_NAMES[d].slice(0, 3)}</Text>
+            <View style={{ flex: 1, gap: 6 }}>
+              {[0, 1].map(b => (
+                <TextInput
+                  key={b}
+                  style={styles.rotEditInput}
+                  value={rotEdit[d]?.[b] ?? ''}
+                  onChangeText={(val) => {
+                    const copy = { ...rotEdit };
+                    if (!copy[d]) copy[d] = ['', ''];
+                    copy[d] = [...copy[d]];
+                    copy[d][b] = val;
+                    setRotEdit(copy);
+                  }}
+                  placeholder={`Block ${b + 1}...`}
+                  placeholderTextColor={Colors.textMuted}
+                />
+              ))}
+            </View>
+          </View>
+        ))}
+
+        <View style={styles.modalActions}>
+          <Button title="Cancel" variant="outline" onPress={() => setManageModal(false)} />
+          <Button title="Save" onPress={saveRotation} color={C} />
+        </View>
+      </ModalSheet>
+
       <View style={{ height: 30 }} />
     </ScrollView>
   );
@@ -304,15 +362,7 @@ const styles = StyleSheet.create({
   stepBtnTxt: { color: Colors.textSecondary, fontSize: 18, fontWeight: '700', lineHeight: 22 },
   actHours: { fontSize: 16, fontWeight: '800', minWidth: 42, textAlign: 'center', letterSpacing: -0.3 },
   dayLabel: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
-  rotCard: {
-    backgroundColor: Colors.surface,
-    borderLeftWidth: 3,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  rotCard: { backgroundColor: Colors.surface, borderLeftWidth: 3, borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   rotTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
   rotTime: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginTop: 3 },
   blockBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
@@ -324,17 +374,24 @@ const styles = StyleSheet.create({
   progressName: { color: Colors.text, fontSize: 13, fontWeight: '700' },
   progressHours: { fontSize: 13, fontWeight: '700' },
   emptyText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
-  addRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  addInput: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, color: Colors.text, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  courseItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6, gap: 10 },
-  courseDot: { width: 8, height: 8, borderRadius: 4 },
-  courseName: { color: Colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
   logEntry: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 14, padding: 12, marginBottom: 6, gap: 10 },
   logIconBox: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   logCourse: { color: Colors.text, fontSize: 13, fontWeight: '700' },
   logTopic: { color: Colors.textSecondary, fontSize: 12, marginTop: 1 },
   logDate: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5, marginTop: 2 },
   logHours: { fontSize: 16, fontWeight: '800' },
+  manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.surface, borderRadius: 16, paddingVertical: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
+  manageBtnIcon: { fontSize: 18 },
+  manageBtnText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  manageSection: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 },
+  addRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  addInput: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, color: Colors.text, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
+  courseItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6, gap: 10 },
+  courseDot: { width: 8, height: 8, borderRadius: 4 },
+  courseName: { color: Colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  rotEditRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
+  rotEditDay: { color: Colors.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', width: 32, paddingTop: 10 },
+  rotEditInput: { backgroundColor: Colors.surface, borderRadius: 10, color: Colors.text, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13, borderWidth: 1, borderColor: Colors.border },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: Colors.surfaceHigh, borderWidth: 1, borderColor: Colors.border },
   catBtnText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },

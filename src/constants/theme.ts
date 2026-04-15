@@ -45,10 +45,10 @@ export const Colors = {
 // Per-tab signature colors
 export const TAB_COLORS: Record<string, string> = {
   index:     '#6366f1', // indigo
-  schedule:  '#22d3ee', // cyan
+  tasks:     '#3b82f6', // blue
   fitness:   '#22c55e', // green
   learning:  '#fb923c', // orange
-  skills:    '#fbbf24', // yellow
+  skills:    '#f472b6', // pink
   journal:   '#f472b6', // pink
   finance:   '#2dd4bf', // teal
   analytics: '#a78bfa', // purple

@@ -47,6 +47,7 @@ export default function FitnessScreen() {
   const [devType, setDevType] = useState('alcohol');
   const [devDesc, setDevDesc] = useState('');
   const [devNotes, setDevNotes] = useState('');
+  const [manageModal, setManageModal] = useState(false);
 
   const loadGlobal = useCallback(async () => {
     setWeightLog(await getData('weightLog', []));
@@ -204,7 +205,7 @@ export default function FitnessScreen() {
         })}
       </Card>
 
-      {/* Stats Banner */}
+      {/* Body Stats — display only */}
       <Card title="Body Stats" accentColor={C}>
         <View style={styles.statsGrid}>
           <View style={[styles.statBox, { borderColor: Colors.purple + '40', backgroundColor: Colors.purpleBg }]}>
@@ -229,10 +230,6 @@ export default function FitnessScreen() {
             <Text style={[styles.statBoxVal, { color: Colors.accentLight }]}>{avg7Sleep !== null ? avg7Sleep.toFixed(1) : '–'}</Text>
             <Text style={styles.statBoxSub}>sleep hrs</Text>
           </View>
-        </View>
-        <View style={styles.btnRow}>
-          <Button title="⚖️ Log Weight" size="sm" variant="outline" color={Colors.purple} onPress={() => { setWDate(TODAY()); setWValue(''); setWeightModal(true); }} />
-          <Button title="😴 Log Sleep" size="sm" variant="outline" color={Colors.cyan} onPress={() => { setSDate(TODAY()); setSBedtime(''); setSWaketime(''); setSleepModal(true); }} />
         </View>
       </Card>
 
@@ -291,7 +288,7 @@ export default function FitnessScreen() {
         </View>
       </Card>
 
-      {/* Charts */}
+      {/* Weekly Stats — Charts */}
       {weightData && (
         <Card title="Weight Trend" accentColor={Colors.purple}>
           <LineChart data={weightData} width={screenW} height={180}
@@ -304,6 +301,34 @@ export default function FitnessScreen() {
             chartConfig={chartCfg(Colors.cyan, 'rgba(34,211,238,1)')} bezier style={{ borderRadius: 12, overflow: 'hidden' }} />
         </Card>
       )}
+
+      {/* Manage Button */}
+      <TouchableOpacity style={styles.manageBtn} onPress={() => setManageModal(true)}>
+        <Text style={styles.manageBtnIcon}>⚙️</Text>
+        <Text style={styles.manageBtnText}>Manage</Text>
+      </TouchableOpacity>
+
+      {/* Manage Modal */}
+      <ModalSheet visible={manageModal} onClose={() => setManageModal(false)} title="Manage Fitness" accentColor={C}>
+        <Text style={styles.manageSection}>Log Data</Text>
+        <View style={styles.manageActions}>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.purple + '40' }]} onPress={() => { setManageModal(false); setWDate(TODAY()); setWValue(''); setWeightModal(true); }}>
+            <Text style={styles.manageActionIcon}>⚖️</Text>
+            <Text style={[styles.manageActionLabel, { color: Colors.purple }]}>Log Weight</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.cyan + '40' }]} onPress={() => { setManageModal(false); setSDate(TODAY()); setSBedtime(''); setSWaketime(''); setSleepModal(true); }}>
+            <Text style={styles.manageActionIcon}>😴</Text>
+            <Text style={[styles.manageActionLabel, { color: Colors.cyan }]}>Log Sleep</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: Colors.red + '40' }]} onPress={() => { setManageModal(false); setDevModal(true); }}>
+            <Text style={styles.manageActionIcon}>🍕</Text>
+            <Text style={[styles.manageActionLabel, { color: Colors.red }]}>Log Deviation</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.modalActions}>
+          <Button title="Done" onPress={() => setManageModal(false)} color={C} />
+        </View>
+      </ModalSheet>
 
       {/* Log Weight Modal */}
       <ModalSheet visible={weightModal} onClose={() => setWeightModal(false)} title="Log Weight" accentColor={Colors.purple}>
@@ -405,4 +430,12 @@ const styles = StyleSheet.create({
   catBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceHigh },
   catBtnText: { fontSize: 12, fontWeight: '600' },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10, marginBottom: 20 },
+  manageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.surface, borderRadius: 16, paddingVertical: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
+  manageBtnIcon: { fontSize: 18 },
+  manageBtnText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  manageSection: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12, marginTop: 4 },
+  manageActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  manageAction: { flex: 1, minWidth: '28%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 14, paddingVertical: 16, borderWidth: 1, gap: 6 },
+  manageActionIcon: { fontSize: 24 },
+  manageActionLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
 });

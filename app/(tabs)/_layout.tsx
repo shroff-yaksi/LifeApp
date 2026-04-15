@@ -4,7 +4,7 @@ import { Colors, TAB_COLORS } from '../../src/constants/theme';
 
 const TAB_EMOJIS: Record<string, string> = {
   Dashboard: '⚡',
-  Schedule:  '📅',
+  Tasks:     '✅',
   Fitness:   '💪',
   Learning:  '📚',
   Skills:    '🎸',
@@ -13,7 +13,7 @@ const TAB_EMOJIS: Record<string, string> = {
 
 const TAB_ROUTES: Record<string, string> = {
   Dashboard: 'index',
-  Schedule:  'schedule',
+  Tasks:     'tasks',
   Fitness:   'fitness',
   Learning:  'learning',
   Skills:    'skills',
@@ -79,11 +79,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="schedule"
+        name="tasks"
         options={{
-          title: 'Schedule',
-          tabBarIcon: ({ focused }) => <TabIcon label="Schedule" focused={focused} />,
-          tabBarActiveTintColor: TAB_COLORS.schedule,
+          title: 'Tasks',
+          tabBarIcon: ({ focused }) => <TabIcon label="Tasks" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.tasks,
         }}
       />
       <Tabs.Screen
@@ -122,6 +122,7 @@ export default function TabLayout() {
       <Tabs.Screen name="analytics" options={{ href: null }} />
       <Tabs.Screen name="journal" options={{ href: null }} />
       <Tabs.Screen name="finance" options={{ href: null }} />
+      <Tabs.Screen name="schedule" options={{ href: null }} />
     </Tabs>
   );
 }
