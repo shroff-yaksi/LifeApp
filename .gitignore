@@ -35,6 +35,7 @@ yarn-error.*
 *.pem
 
 # Local env
+.env
 .env*.local
 
 # TypeScript

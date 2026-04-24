@@ -82,6 +82,12 @@ export default function DashboardScreen() {
     await setData('scheduleCompletion_' + TODAY(), comp);
   };
 
+  const toggleHabit = async (h: string) => {
+    const updated = { ...habitData, [h]: !habitData[h] };
+    setHabitData(updated);
+    await setData('habitData_' + TODAY(), updated);
+  };
+
   const adjustWater = async (d: number) => {
     const newVal = Math.max(0, water + d);
     setWater(newVal);
@@ -221,6 +227,33 @@ export default function DashboardScreen() {
         </View>
       </Card>
 
+      {/* ── TODAY'S HABITS ───────────────────────────────────── */}
+      {habits.length > 0 && (
+        <Card
+          title="Today's Habits"
+          badge={habitPct === 100 ? '✓ All done' : `${habitDone}/${habits.length}`}
+          badgeColor={habitPct === 100 ? Colors.green : C}
+          accentColor={C}
+        >
+          <View style={styles.habitsGrid}>
+            {habits.map(h => {
+              const done = !!habitData[h];
+              return (
+                <TouchableOpacity
+                  key={h}
+                  style={[styles.habitChip, done && { borderColor: P.border, backgroundColor: P.bgMid }]}
+                  onPress={() => toggleHabit(h)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 11, color: done ? C : Colors.textMuted, lineHeight: 14 }}>{done ? '✓' : '○'}</Text>
+                  <Text style={[styles.habitChipTxt, { color: done ? P.text : Colors.textMuted }]}>{h}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Card>
+      )}
+
       {/* ── MISSED TASKS ─────────────────────────────────────── */}
       {backlog.length > 0 && (
         <Card title="Missed Tasks" badge={`${backlog.length}`} badgeColor={Colors.red} accentColor={Colors.red}>
@@ -279,6 +312,20 @@ const styles = StyleSheet.create({
   trackerBtns: { flexDirection: 'row', gap: 6 },
   trackerBtn: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 10 },
   trackerBtnTxt: { color: Colors.textSecondary, fontSize: 15, fontWeight: '800' },
+
+  habitsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  habitChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  habitChipTxt: { fontSize: 11, fontWeight: '600' },
 
   backlogItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 6 },
   backlogDot: { width: 8, height: 8, borderRadius: 4 },

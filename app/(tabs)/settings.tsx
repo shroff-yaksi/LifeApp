@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, Share, TextInput, RefreshControl } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, DEFAULT_REMINDER_SETTINGS, DEFAULT_GOALS, DEFAULT_HABITS, TAB_COLORS } from '../../src/constants/theme';
 import { getData, setData, exportAllData, getAllKeys, removeData, importAllData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
@@ -12,6 +12,7 @@ import { scheduleAllReminders, cancelAllReminders, sendTestNotification, request
 const C = TAB_COLORS.settings;
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [reminderSettings, setReminderSettings] = useState<any>(DEFAULT_REMINDER_SETTINGS);
@@ -181,7 +182,7 @@ export default function SettingsScreen() {
         <View style={styles.settingRow}>
           <View style={styles.settingTextCol}>
             <Text style={styles.settingLabel}>Daily Reminders</Text>
-            <Text style={styles.settingDesc}>Water · Journal · Sleep · Skincare</Text>
+            <Text style={styles.settingDesc}>Meals · Gym · Habits · Journal · Sleep · Skincare</Text>
           </View>
           <Switch
             value={notifEnabled}
@@ -190,9 +191,17 @@ export default function SettingsScreen() {
             thumbColor={notifEnabled ? Colors.accent : Colors.textMuted}
           />
         </View>
+        <TouchableOpacity style={styles.alarmsNavRow} onPress={() => router.push('/(tabs)/alarms')}>
+          <Text style={styles.alarmsNavIcon}>⏰</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.alarmsNavLabel}>Alarms</Text>
+            <Text style={styles.alarmsNavDesc}>Wake-up alarms · Spotify & Apple Music</Text>
+          </View>
+          <Text style={{ color: Colors.textMuted, fontSize: 18 }}>›</Text>
+        </TouchableOpacity>
         <View style={styles.btnRow}>
           <Button
-            title="⏰ Configure Times"
+            title="Configure Times"
             size="sm"
             variant="outline"
             color={Colors.accentLight}
@@ -202,7 +211,7 @@ export default function SettingsScreen() {
             }}
           />
           <Button
-            title="🔔 Send Test"
+            title="Send Test"
             size="sm"
             variant="ghost"
             color={Colors.accentLight}
@@ -316,13 +325,18 @@ export default function SettingsScreen() {
       </ModalSheet>
 
       {/* Notification Settings Modal */}
-      <ModalSheet visible={notifModal} onClose={() => setNotifModal(false)} title="Reminder Settings" accentColor={Colors.accentLight}>
-        <FormField label="💧 Water interval (minutes)" value={notifEdits['waterIntervalMins'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterIntervalMins: v }))} keyboardType="number-pad" placeholder="90" />
-        <FormField label="💧 Water start (HH:MM)" value={notifEdits['waterStart'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterStart: v }))} placeholder="09:00" />
-        <FormField label="💧 Water end (HH:MM)" value={notifEdits['waterEnd'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, waterEnd: v }))} placeholder="22:00" />
-        <FormField label="📓 Journal reminder (HH:MM)" value={notifEdits['journalTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, journalTime: v }))} placeholder="22:45" />
+      <ModalSheet visible={notifModal} onClose={() => setNotifModal(false)} title="Reminder Times" accentColor={Colors.accentLight}>
+        <FormField label="💪 Gym (HH:MM)" value={notifEdits['gymTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, gymTime: v }))} placeholder="06:30" />
+        <FormField label="🌿 Morning skincare (HH:MM)" value={notifEdits['skincareTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, skincareTime: v }))} placeholder="07:00" />
+        <FormField label="🍳 Breakfast (HH:MM)" value={notifEdits['breakfastTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, breakfastTime: v }))} placeholder="09:00" />
+        <FormField label="🥗 Lunch (HH:MM)" value={notifEdits['lunchTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, lunchTime: v }))} placeholder="13:00" />
+        <FormField label="🍎 Snack (HH:MM)" value={notifEdits['snackTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, snackTime: v }))} placeholder="16:30" />
+        <FormField label="🍽️ Dinner (HH:MM)" value={notifEdits['dinnerTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, dinnerTime: v }))} placeholder="19:30" />
+        <FormField label="✅ Habits nudge (HH:MM)" value={notifEdits['habitsCheckTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, habitsCheckTime: v }))} placeholder="20:00" />
+        <FormField label="📋 Daily log (HH:MM)" value={notifEdits['dailyLogTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, dailyLogTime: v }))} placeholder="21:00" />
+        <FormField label="📚 Reading / phone down (HH:MM)" value={notifEdits['readingTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, readingTime: v }))} placeholder="22:00" />
+        <FormField label="📓 Journal (HH:MM)" value={notifEdits['journalTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, journalTime: v }))} placeholder="22:45" />
         <FormField label="😴 Sleep wind-down (HH:MM)" value={notifEdits['sleepReminder'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, sleepReminder: v }))} placeholder="23:00" />
-        <FormField label="✨ Skincare reminder (HH:MM)" value={notifEdits['skincareTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, skincareTime: v }))} placeholder="07:00" />
         <View style={styles.modalBtns}>
           <Button title="Cancel" variant="outline" onPress={() => setNotifModal(false)} />
           <Button title="Save" onPress={saveNotifSettings} color={Colors.accentLight} />
@@ -340,6 +354,14 @@ const styles = StyleSheet.create({
   settingTextCol: { flex: 1, marginRight: 12 },
   settingLabel: { color: Colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.3 },
   settingDesc: { color: Colors.textMuted, fontSize: 10, fontWeight: '600', marginTop: 3, letterSpacing: 0.3 },
+  alarmsNavRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.surface, borderRadius: 14,
+    padding: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
+  },
+  alarmsNavIcon: { fontSize: 22 },
+  alarmsNavLabel: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+  alarmsNavDesc: { color: Colors.textMuted, fontSize: 10, marginTop: 2 },
   btnRow: { flexDirection: 'row', gap: 10 },
   goalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6 },
   goalLabel: { color: Colors.textSecondary, fontSize: 13 },

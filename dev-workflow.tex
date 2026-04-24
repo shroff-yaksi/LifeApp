@@ -1,0 +1,121 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+
+\definecolor{codebg}{gray}{0.95}
+\definecolor{codetext}{rgb}{0.1,0.1,0.5}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small\color{codetext},
+  frame=single,
+  framerule=0pt,
+  rulecolor=\color{codebg},
+  breaklines=true,
+  xleftmargin=8pt,
+  xrightmargin=8pt,
+}
+
+\title{\textbf{LifeOS --- iOS Development Workflow}}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% -------------------------------------------------------
+\section{Daily Development (JS/TS changes)}
+
+\begin{enumerate}[leftmargin=*, label=\textbf{Step \arabic*.}]
+
+  \item \textbf{Start the dev server.} Open a Terminal, navigate to the project, and run:
+  \begin{lstlisting}
+cd ~/Desktop/LifeApp
+./dev.sh
+  \end{lstlisting}
+  The script auto-detects your Mac's LAN IP and prints the connection URL.
+  Keep this terminal open the entire coding session.
+
+  \item \textbf{Open the app on your iPhone} (wired to the Mac, screen unlocked).
+  \begin{itemize}
+    \item \textbf{Auto-connects:} nothing to do.
+    \item \textbf{Shows ``No development servers found'':} tap \textbf{Enter URL manually}
+      and type the \texttt{exp://} URL printed by the script
+      (e.g.\ \texttt{exp://192.168.0.114:8081}).
+      You only need to do this \emph{once} --- the app remembers the address.
+  \end{itemize}
+
+  \item \textbf{Make changes and save.}
+  Fast Refresh pushes every \texttt{.ts}/\texttt{.tsx} save to the device
+  instantly --- no manual reload required.
+
+\end{enumerate}
+
+\medskip
+\noindent\textbf{VSCode shortcut:} \texttt{Cmd+Shift+P} $\to$
+\textit{Tasks: Run Task} $\to$ \textbf{Start Dev Server}
+(no terminal needed, output stays in the integrated panel).
+
+% -------------------------------------------------------
+\section{Native Rebuild (new packages / iOS changes)}
+
+Required when you:
+\begin{itemize}
+  \item Install an npm package that contains native iOS code
+  \item Change \texttt{app.json} or \texttt{app.config.ts}
+  \item Edit anything inside the \texttt{ios/} folder
+\end{itemize}
+
+Stop the dev server (\texttt{Ctrl+C}), then run:
+\begin{lstlisting}
+./run.sh
+\end{lstlisting}
+The script reads the device UDID from \texttt{.env}, rebuilds the native app,
+and installs it on the device. Start \texttt{./dev.sh} again afterwards.
+
+% -------------------------------------------------------
+\section{Release / App Store Build}
+
+Produces a \texttt{Release} binary with no dev tools or Metro dependency:
+\begin{lstlisting}
+./release.sh
+\end{lstlisting}
+
+% -------------------------------------------------------
+\section{Fast Refresh Limitations}
+
+Fast Refresh works for the vast majority of edits. It will \emph{not} fully
+apply in these cases --- shake the device and tap \textbf{Reload} instead:
+
+\begin{itemize}
+  \item Editing a file that exports a class component
+  \item Changing the root navigator structure
+  \item Modifying a custom hook that has side effects in its module scope
+\end{itemize}
+
+% -------------------------------------------------------
+\section{Quick Reference}
+
+\begin{center}
+\begin{tabular}{>{\ttfamily}ll}
+\toprule
+\normalfont\textbf{Command} & \textbf{When to use} \\
+\midrule
+./dev.sh         & Every coding session (start here) \\
+./run.sh         & After installing a native package or changing iOS config \\
+./release.sh     & App Store / TestFlight submission \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{Device UDID} is stored in \texttt{.env} (git-ignored).
+To update it, edit that file.
+
+\end{document}

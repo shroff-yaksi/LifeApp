@@ -1,15 +1,18 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Text, View, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
 
-// Minimal single-char glyphs — no emoji overload
-const TAB_GLYPHS: Record<string, string> = {
-  Dashboard: '⊹',
-  Tasks:     '◻',
-  Fitness:   '◈',
-  Learning:  '◎',
-  Skills:    '◇',
-  Settings:  '⊙',
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const TAB_ICONS: Record<string, { outline: IoniconName; filled: IoniconName }> = {
+  Dashboard: { outline: 'grid-outline',           filled: 'grid' },
+  Tasks:     { outline: 'checkmark-done-outline',  filled: 'checkmark-done' },
+  Fitness:   { outline: 'barbell-outline',         filled: 'barbell' },
+  Learning:  { outline: 'book-outline',            filled: 'book' },
+  Skills:    { outline: 'flash-outline',           filled: 'flash' },
+  Settings:  { outline: 'settings-outline',        filled: 'settings' },
 };
 
 const TAB_ROUTES: Record<string, string> = {
@@ -24,6 +27,7 @@ const TAB_ROUTES: Record<string, string> = {
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const route = TAB_ROUTES[label];
   const color = TAB_COLORS[route] || Colors.accent;
+  const icons = TAB_ICONS[label];
   return (
     <View style={{
       width: 36,
@@ -41,13 +45,11 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
           backgroundColor: color,
         }} />
       )}
-      <Text style={{
-        fontSize: 16,
-        color: focused ? color : Colors.textMuted,
-        lineHeight: 20,
-      }}>
-        {TAB_GLYPHS[label] || '·'}
-      </Text>
+      <Ionicons
+        name={focused ? icons.filled : icons.outline}
+        size={20}
+        color={focused ? color : Colors.textMuted}
+      />
     </View>
   );
 }
@@ -76,6 +78,9 @@ function TimerButton() {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 60 + insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
@@ -87,9 +92,9 @@ export default function TabLayout() {
           backgroundColor: Colors.card,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 68,
+          height: tabBarHeight,
           paddingTop: 8,
-          paddingBottom: 8,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
         },
         tabBarActiveTintColor: Colors.text,
         tabBarInactiveTintColor: Colors.textMuted,
@@ -149,6 +154,7 @@ export default function TabLayout() {
       <Tabs.Screen name="journal" options={{ href: null }} />
       <Tabs.Screen name="finance" options={{ href: null }} />
       <Tabs.Screen name="schedule" options={{ href: null }} />
+      <Tabs.Screen name="alarms" options={{ href: null, title: 'Alarms', headerShown: true }} />
     </Tabs>
   );
 }

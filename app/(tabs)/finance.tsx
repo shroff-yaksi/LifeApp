@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
-import { TODAY, uid } from '../../src/utils/helpers';
+import { TODAY, addDays, uid } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -40,7 +40,9 @@ function getDaysOfMonth(monthKey: string): string[] {
 
 export default function FinanceScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [todayExpenses, setTodayExpenses] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState(TODAY());
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ date: string; total: number }[]>([]);
   const [monthlyTotals, setMonthlyTotals] = useState<Record<string, number>>({});
   const [monthlyBudget, setMonthlyBudget] = useState<Record<string, number>>({});
   const [netWorth, setNetWorth] = useState<{ assets: any[]; liabilities: any[] }>({ assets: [], liabilities: [] });
@@ -56,8 +58,25 @@ export default function FinanceScreen() {
   const [nwValue, setNwValue] = useState('');
   const [nwType, setNwType] = useState<'asset' | 'liability'>('asset');
 
+  const isToday = selectedDate === TODAY();
+
+  const loadExpenses = useCallback(async (date: string) => {
+    setExpenses(await getData<any[]>('expenses_' + date, []));
+  }, []);
+
   const loadData = useCallback(async () => {
-    setTodayExpenses(await getData<any[]>('expenses_' + TODAY(), []));
+    await loadExpenses(selectedDate);
+
+    // Weekly spending (last 7 days ending today)
+    const weekly: { date: string; total: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = addDays(TODAY(), -i);
+      const exps = await getData<any[]>('expenses_' + d, []);
+      weekly.push({ date: d, total: exps.reduce((s, e) => s + e.amount, 0) });
+    }
+    setWeeklyData(weekly);
+
+    // Monthly totals for budget card
     const mk = getMonthKey();
     setMonthlyBudget(await getData('budget_' + mk, {}));
     const days = getDaysOfMonth(mk);
@@ -68,21 +87,28 @@ export default function FinanceScreen() {
     }
     setMonthlyTotals(totals);
     setNetWorth(await getData('netWorth', { assets: [], liabilities: [] }));
-  }, []);
+  }, [selectedDate, loadExpenses]);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setRefreshing(false); }, [loadData]);
+
+  const navigateDate = useCallback(async (dir: -1 | 1) => {
+    const newDate = addDays(selectedDate, dir);
+    if (newDate > TODAY()) return;
+    setSelectedDate(newDate);
+    setExpenses(await getData<any[]>('expenses_' + newDate, []));
+  }, [selectedDate]);
 
   const addExpense = async () => {
     const a = parseFloat(amount);
     if (!a || a <= 0) { Alert.alert('Invalid Amount', 'Enter a positive amount.'); return; }
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const entry = { id: uid(), amount: a, category, note: note.trim(), date: TODAY(), time, ts: Date.now() };
-    const updated = [entry, ...todayExpenses];
-    setTodayExpenses(updated);
-    await setData('expenses_' + TODAY(), updated);
+    const entry = { id: uid(), amount: a, category, note: note.trim(), date: selectedDate, time, ts: Date.now() };
+    const updated = [entry, ...expenses];
+    setExpenses(updated);
+    await setData('expenses_' + selectedDate, updated);
     setAmount(''); setNote(''); setAddModal(false);
     loadData();
   };
@@ -92,9 +118,9 @@ export default function FinanceScreen() {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
-          const updated = todayExpenses.filter(e => e.id !== id);
-          setTodayExpenses(updated);
-          await setData('expenses_' + TODAY(), updated);
+          const updated = expenses.filter(e => e.id !== id);
+          setExpenses(updated);
+          await setData('expenses_' + selectedDate, updated);
           loadData();
         },
       },
@@ -139,9 +165,22 @@ export default function FinanceScreen() {
   const totalAssets = netWorth.assets.reduce((s, a) => s + a.value, 0);
   const totalLiabilities = netWorth.liabilities.reduce((s, l) => s + l.value, 0);
   const netWorthVal = totalAssets - totalLiabilities;
-  const todayTotal = todayExpenses.reduce((s, e) => s + e.amount, 0);
+  const dayTotal = expenses.reduce((s, e) => s + e.amount, 0);
   const monthTotal = Object.values(monthlyTotals).reduce((s, v) => s + v, 0);
   const monthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+  const weekMax = useMemo(() => Math.max(...weeklyData.map(d => d.total), 1), [weeklyData]);
+
+  const formatDateLabel = (d: string) => {
+    if (d === TODAY()) return 'Today';
+    const date = new Date(d + 'T00:00:00');
+    return date.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+  };
+
+  const formatSelectedDate = () => {
+    if (selectedDate === TODAY()) return 'Today';
+    const date = new Date(selectedDate + 'T00:00:00');
+    return date.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}>
@@ -169,24 +208,42 @@ export default function FinanceScreen() {
         </View>
       </Card>
 
-      {/* Today's Spending */}
+      {/* Daily Expenses */}
       <Card
-        title="Today's Spending"
+        title="Daily Expenses"
         accentColor={Colors.orange}
         headerRight={
           <Button title="+ Add" size="sm" color={Colors.orange} onPress={() => { setAmount(''); setNote(''); setCategory('food'); setAddModal(true); }} />
         }
       >
-        <View style={styles.todayTotalRow}>
-          <Text style={[styles.todayTotal, { color: Colors.orange }]}>₹{todayTotal.toFixed(2)}</Text>
-          <Text style={styles.todayTotalLabel}>spent today</Text>
+        {/* Date navigation */}
+        <View style={styles.dateNav}>
+          <TouchableOpacity onPress={() => navigateDate(-1)} style={styles.dateNavBtn}>
+            <Text style={styles.dateNavArrow}>‹</Text>
+          </TouchableOpacity>
+          <View style={styles.dateNavCenter}>
+            <Text style={styles.dateNavLabel}>{formatSelectedDate()}</Text>
+            {!isToday && (
+              <TouchableOpacity onPress={() => { setSelectedDate(TODAY()); loadExpenses(TODAY()); }}>
+                <Text style={[styles.dateNavToday, { color: Colors.orange }]}>Jump to today</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity onPress={() => navigateDate(1)} style={[styles.dateNavBtn, isToday && { opacity: 0.2 }]} disabled={isToday}>
+            <Text style={styles.dateNavArrow}>›</Text>
+          </TouchableOpacity>
         </View>
-        {todayExpenses.length === 0 ? (
+
+        <View style={styles.todayTotalRow}>
+          <Text style={[styles.todayTotal, { color: Colors.orange }]}>₹{dayTotal.toFixed(0)}</Text>
+          <Text style={styles.todayTotalLabel}>spent{isToday ? ' today' : ' this day'}</Text>
+        </View>
+        {expenses.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>💸</Text>
-            <Text style={styles.emptyText}>No expenses logged yet</Text>
+            <Text style={styles.emptyText}>No expenses logged</Text>
           </View>
-        ) : todayExpenses.map(e => {
+        ) : expenses.map(e => {
           const cat = CATS[e.category as CatKey] || CATS.other;
           return (
             <View key={e.id} style={styles.expRow}>
@@ -204,6 +261,25 @@ export default function FinanceScreen() {
             </View>
           );
         })}
+      </Card>
+
+      {/* 7-Day Spending */}
+      <Card title="Last 7 Days" accentColor={C}>
+        {weeklyData.map(({ date, total }) => (
+          <TouchableOpacity
+            key={date}
+            style={[styles.weekRow, date === selectedDate && { backgroundColor: Colors.surface, borderRadius: 10, paddingHorizontal: 8 }]}
+            onPress={() => { setSelectedDate(date); loadExpenses(date); }}
+          >
+            <Text style={[styles.weekDay, date === TODAY() && { color: Colors.orange }]}>{formatDateLabel(date)}</Text>
+            <View style={styles.weekBarWrap}>
+              <View style={[styles.weekBar, { width: `${(total / weekMax) * 100}%` as any, backgroundColor: date === selectedDate ? Colors.orange : C + '60' }]} />
+            </View>
+            <Text style={[styles.weekAmt, total > 0 ? { color: Colors.text } : { color: Colors.textMuted }]}>
+              {total > 0 ? `₹${total.toFixed(0)}` : '—'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </Card>
 
       {/* Monthly Budget */}
@@ -362,6 +438,17 @@ const styles = StyleSheet.create({
   nwBox: { flex: 1, borderRadius: 14, padding: 12, borderWidth: 1, alignItems: 'center' },
   nwBoxLabel: { color: Colors.textMuted, fontSize: 8, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 4 },
   nwBoxVal: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  dateNavBtn: { padding: 8 },
+  dateNavArrow: { color: Colors.textSecondary, fontSize: 22, fontWeight: '300', lineHeight: 24 },
+  dateNavCenter: { alignItems: 'center' },
+  dateNavLabel: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+  dateNavToday: { fontSize: 10, fontWeight: '600', marginTop: 2 },
+  weekRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
+  weekDay: { color: Colors.textSecondary, fontSize: 11, fontWeight: '600', width: 44 },
+  weekBarWrap: { flex: 1, height: 5, backgroundColor: Colors.surface, borderRadius: 3, overflow: 'hidden' },
+  weekBar: { height: 5, borderRadius: 3, minWidth: 2 },
+  weekAmt: { fontSize: 11, fontWeight: '700', width: 56, textAlign: 'right' as const },
   todayTotalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 16 },
   todayTotal: { fontSize: 36, fontWeight: '800', letterSpacing: -1 },
   todayTotalLabel: { color: Colors.textMuted, fontSize: 12 },

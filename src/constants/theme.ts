@@ -149,12 +149,15 @@ export const DEFAULT_GOALS = {
 };
 
 export const DEFAULT_REMINDER_SETTINGS = {
-  waterIntervalMins: 90,
-  waterStart: '09:00',
-  waterEnd: '22:00',
-  journalTime: '22:45',
-  sleepReminder: '23:00',
-  skincareTime: '07:00',
-  nightlyRoutineTime: '23:00',
-  preActivityMinutes: 15,
+  gymTime:        '06:30',  // morning gym push
+  skincareTime:   '07:00',  // morning skincare
+  breakfastTime:  '09:00',  // breakfast check-in
+  lunchTime:      '13:00',  // lunch check-in
+  snackTime:      '16:30',  // afternoon snack
+  dinnerTime:     '19:30',  // dinner check-in
+  habitsCheckTime:'20:00',  // evening habits nudge
+  dailyLogTime:   '21:00',  // daily log / what did you do
+  readingTime:    '22:00',  // put phone down, read
+  journalTime:    '22:45',  // journal prompt
+  sleepReminder:  '23:00',  // wind-down
 };

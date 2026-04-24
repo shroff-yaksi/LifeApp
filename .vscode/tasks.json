@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Dev Server",
+      "type": "shell",
+      "command": "./dev.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Rebuild iOS (native changes)",
+      "type": "shell",
+      "command": "./run.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "isBackground": false,
+      "problemMatcher": []
+    },
+    {
+      "label": "Release Build (App Store)",
+      "type": "shell",
+      "command": "./release.sh",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "isBackground": false,
+      "problemMatcher": []
+    }
+  ]
+}

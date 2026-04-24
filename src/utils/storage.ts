@@ -1,15 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// In-memory cache — eliminates redundant AsyncStorage reads within a session
+const cache = new Map<string, any>();
+
 export async function getData<T>(key: string, fallback: T): Promise<T> {
+  if (cache.has(key)) return cache.get(key) as T;
   try {
     const v = await AsyncStorage.getItem(key);
-    return v !== null ? JSON.parse(v) : fallback;
+    const result = v !== null ? JSON.parse(v) : fallback;
+    cache.set(key, result);
+    return result;
   } catch {
     return fallback;
   }
 }
 
 export async function setData(key: string, val: any): Promise<void> {
+  cache.set(key, val);
   try {
     await AsyncStorage.setItem(key, JSON.stringify(val));
   } catch (e) {
@@ -18,6 +25,7 @@ export async function setData(key: string, val: any): Promise<void> {
 }
 
 export async function removeData(key: string): Promise<void> {
+  cache.delete(key);
   try {
     await AsyncStorage.removeItem(key);
   } catch {}
@@ -42,6 +50,7 @@ export async function exportAllData(): Promise<Record<string, any>> {
 }
 
 export async function importAllData(data: Record<string, any>): Promise<void> {
+  cache.clear();
   const entries = Object.entries(data).map(([key, val]) => [key, JSON.stringify(val)] as [string, string]);
   await AsyncStorage.multiSet(entries);
 }
