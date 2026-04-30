@@ -17,14 +17,18 @@
       "bundleIdentifier": "com.yaksishroff.lifeos",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "runtimeVersion": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090b"
       },
-      "package": "com.yaksishroff.lifeos"
+      "package": "com.yaksishroff.lifeos",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,8 +49,11 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e70a387d-b47d-4f69-b451-14c238c00092"
+        "projectId": "3064b2dd-18b3-4110-a62d-240b62fb75b2"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3064b2dd-18b3-4110-a62d-240b62fb75b2"
     }
   }
 }
