@@ -121,23 +121,23 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export const LEARNING_ROTATION: Record<number, string[]> = {
-  1: ['Stock Market', 'Forex'],
-  2: ['Quantitative Finance', 'Artificial Intelligence'],
-  3: ['Research Work', 'Stock Market'],
-  4: ['Forex', 'Quantitative Finance'],
-  5: ['Artificial Intelligence', 'Research Work'],
+  1: [],
+  2: [],
+  3: [],
+  4: [],
+  5: [],
 };
 
-export const SKILL_LIST = ['Guitar', 'Kathak', 'Cooking', 'Sports'];
+export const SKILL_LIST: string[] = [];
 
-export const DEFAULT_HABITS = ['Gym', 'Walking', 'Swimming', 'Reading', 'Healthy Diet', 'Skincare', 'Journalling'];
+export const DEFAULT_HABITS = ['Exercise', 'Hydrate', 'Read', 'Sleep 8h', 'Walk'];
 
 export const DEFAULT_MEAL_TIMINGS = { breakfast: '09:00', lunch: '13:00', snack: '17:00', dinner: '20:30' };
 
 export const DEFAULT_GOALS = {
   weeklyGym: 5,
   weeklyStudyHours: 10,
-  weeklyCigLimit: 5,
+  weeklyCigLimit: 0,
   weeklyWater: 56,
   weeklySleepAvg: 7.25,
   weeklySkillHours: 8,
