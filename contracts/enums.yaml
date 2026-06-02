@@ -1,0 +1,61 @@
+# Enum-like value sets used across LifeOS.
+# Source of truth: the screen TS types + src/constants/theme.ts.
+# No backend — these are client-side constants, not wire enums.
+
+schedule_category:
+  description: Category of a recurring schedule task (drives CATEGORY_COLORS).
+  values: [fitness, work, learning, personal, meal, sleep, date, skill]
+
+expense_category:
+  description: Finance expense category (Finance screen CATS).
+  values: [food, transport, entertainment, health, shopping, bills, investment, other]
+
+mood:
+  description: Journal daily mood, 1-5.
+  values:
+    1: Rough
+    2: Low
+    3: Okay
+    4: Good
+    5: Great
+
+day_type:
+  description: Which schedule template applies to a date.
+  values: [weekday, saturday, sunday]
+
+day_of_week:
+  description: JS getDay() index used by learning rotation and date helpers.
+  values:
+    0: Sunday
+    1: Monday
+    2: Tuesday
+    3: Wednesday
+    4: Thursday
+    5: Friday
+    6: Saturday
+
+alarm_weekday:
+  description: Expo notification weekday numbering (note the +1 offset vs day_of_week). Empty days array = one-time alarm.
+  values:
+    1: Sunday
+    2: Monday
+    3: Tuesday
+    4: Wednesday
+    5: Thursday
+    6: Friday
+    7: Saturday
+
+music_service:
+  description: Alarm music deep-link target.
+  values: [spotify, apple_music, none]
+
+timer_mode:
+  description: Pomodoro timer mode (durations in seconds).
+  values:
+    work: 1500
+    short: 300
+    long: 900
+
+button_variant:
+  description: Button component variants.
+  values: [primary, outline, ghost, danger, success]

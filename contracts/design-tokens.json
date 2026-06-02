@@ -1,0 +1,77 @@
+{
+  "$comment": "Mirror of src/constants/theme.ts. theme.ts is the source of truth.",
+  "color": {
+    "surface": {
+      "bg": "#090909",
+      "sidebarBg": "#050505",
+      "card": "#111111",
+      "cardHover": "#161616",
+      "surface": "#161616",
+      "surfaceHigh": "#1c1c1c",
+      "surfaceHighest": "#242424"
+    },
+    "border": {
+      "border": "rgba(255,255,255,0.06)",
+      "borderHover": "rgba(255,255,255,0.10)"
+    },
+    "text": {
+      "text": "#ededed",
+      "textSecondary": "#999999",
+      "textMuted": "#4d4d4d"
+    },
+    "accent": {
+      "accent": "#5E6AD2",
+      "accentLight": "#8b95e0",
+      "accentGlow": "rgba(94,106,210,0.12)",
+      "accentBg": "rgba(94,106,210,0.08)"
+    },
+    "semantic": {
+      "green": "#3aa870",
+      "greenBg": "rgba(58,168,112,0.08)",
+      "red": "#d95f5f",
+      "redBg": "rgba(217,95,95,0.08)",
+      "orange": "#c4783a",
+      "orangeBg": "rgba(196,120,58,0.08)",
+      "purple": "#9580d1",
+      "purpleBg": "rgba(149,128,209,0.08)",
+      "pink": "#b06090",
+      "pinkBg": "rgba(176,96,144,0.08)",
+      "yellow": "#b8952a",
+      "yellowBg": "rgba(184,149,42,0.08)",
+      "cyan": "#2aabba",
+      "cyanBg": "rgba(42,171,186,0.08)",
+      "teal": "#2b9e8f",
+      "tealBg": "rgba(43,158,143,0.08)"
+    },
+    "tab": {
+      "index": "#5E6AD2",
+      "tasks": "#4E8DB8",
+      "fitness": "#3aa870",
+      "learning": "#c4783a",
+      "skills": "#b06090",
+      "journal": "#9580d1",
+      "finance": "#2b9e8f",
+      "analytics": "#9580d1",
+      "settings": "#606060"
+    },
+    "category": {
+      "fitness": "#3aa870",
+      "work": "#5E6AD2",
+      "learning": "#c4783a",
+      "personal": "#b06090",
+      "meal": "#2aabba",
+      "sleep": "#9580d1",
+      "date": "#b06090",
+      "skill": "#b8952a"
+    }
+  },
+  "radius": { "button": 10, "card": 14, "cardAlt": 16, "sheetTop": 20, "pill": 999 },
+  "space": { "base": 4, "screenX": 14, "gap": 12, "section": 24 },
+  "touchTarget": { "min": 44 },
+  "font": {
+    "family": "system",
+    "minWeightAllowed": 400,
+    "weights": [500, 600, 700, 800],
+    "size": { "caption": 10, "label": 11, "body": 14, "title": 13, "value": 22, "heading": 28 }
+  }
+}
