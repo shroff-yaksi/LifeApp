@@ -2,21 +2,23 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Colors, DEFAULT_HABITS, CATEGORY_COLORS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
-import { TODAY, getDayType, formatTime12, timeToMin, NOW_MINUTES, uid, addDays, getWeekStart } from '../../src/utils/helpers';
+import { TODAY, getDayKey, formatTime12, timeToMin, NOW_MINUTES, uid, addDays } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
+import { getBacklogItems } from '../../src/utils/aggregates';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
+import { TimeField } from '../../src/components/TimeField';
 
 const C = TAB_COLORS.tasks; // blue
 const P = TAB_PALETTE.tasks;
-const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 type ScheduleTask = { id: string; name: string; start: string; end: string; category: string };
 type ManualTask = { id: string; name: string; done: boolean; createdAt: string };
+type BacklogItem = { date: string; taskId: string; name: string; category: string; start: string; end: string };
 
 export default function TasksScreen() {
   // Habits
@@ -26,9 +28,10 @@ export default function TasksScreen() {
   // Fixed schedule
   const [scheduleTasks, setScheduleTasks] = useState<ScheduleTask[]>([]);
   const [completion, setCompletion] = useState<Record<string, any>>({});
+  const [skipped, setSkipped] = useState<string[]>([]); // task ids skipped for today (scheduleOverride)
 
-  // Catchup (Sunday leftover)
-  const [catchupItems, setCatchupItems] = useState<{ date: string; task: ScheduleTask }[]>([]);
+  // Backlog / catchup — incomplete, non-skipped schedule tasks from the past 7 days
+  const [catchupItems, setCatchupItems] = useState<BacklogItem[]>([]);
 
   // Manual tasks
   const [manualTasks, setManualTasks] = useState<ManualTask[]>([]);
@@ -44,7 +47,7 @@ export default function TasksScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const todayType = getDayType(TODAY());
+  const todayKey = getDayKey(TODAY());
   const now = new Date();
   const dayName = DAY_NAMES[now.getDay()];
   const fullDate = `${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
@@ -57,31 +60,36 @@ export default function TasksScreen() {
     setHabitData(hData);
 
     // Fixed schedule tasks for today
-    const t = await getData<ScheduleTask[]>('schedule_' + todayType, []);
+    const t = await getData<ScheduleTask[]>('schedule_' + todayKey, []);
     setScheduleTasks(t);
     setCompletion(await getData<Record<string, any>>('scheduleCompletion_' + TODAY(), {}));
+    const ov = await getData<{ skipped?: string[] }>('scheduleOverride_' + TODAY(), {});
+    setSkipped(ov.skipped || []);
 
     // Manual tasks for today
     setManualTasks(await getData<ManualTask[]>('manualTasks_' + TODAY(), []));
-  }, [todayType]);
+  }, [todayKey]);
 
   const loadCatchup = useCallback(async () => {
-    if (todayType !== 'sunday') { setCatchupItems([]); return; }
-    const weekStart = getWeekStart(TODAY());
-    const items: { date: string; task: ScheduleTask }[] = [];
-    for (let i = 0; i < 6; i++) {
-      const ds = addDays(weekStart, i);
-      if (ds > TODAY()) break;
-      const dt = getDayType(ds);
-      const dayTasks = await getData<ScheduleTask[]>('schedule_' + dt, []);
-      const comp = await getData<Record<string, any>>('scheduleCompletion_' + ds, {});
-      dayTasks.forEach(t => {
-        if (!comp[t.id] && t.category !== 'sleep' && t.category !== 'meal')
-          items.push({ date: ds, task: t });
-      });
-    }
-    setCatchupItems(items);
-  }, [todayType]);
+    setCatchupItems(await getBacklogItems());
+  }, []);
+
+  // Dismiss a leftover: skip it on its original date so it leaves the backlog for good
+  const dismissBacklog = async (date: string, taskId: string) => {
+    const ov = await getData<{ skipped?: string[] }>('scheduleOverride_' + date, {});
+    const sk = new Set(ov.skipped || []);
+    sk.add(taskId);
+    await setData('scheduleOverride_' + date, { skipped: [...sk] });
+    loadCatchup();
+  };
+
+  // Carry a leftover to tomorrow as a one-off manual task, then clear it from the backlog
+  const carryBacklog = async (item: BacklogItem) => {
+    const tomorrow = addDays(TODAY(), 1);
+    const list = await getData<ManualTask[]>('manualTasks_' + tomorrow, []);
+    await setData('manualTasks_' + tomorrow, [...list, { id: uid(), name: item.name, done: false, createdAt: new Date().toISOString() }]);
+    await dismissBacklog(item.date, item.taskId);
+  };
 
   useFocusEffect(useCallback(() => { loadData(); loadCatchup(); }, [loadData, loadCatchup]));
 
@@ -106,8 +114,14 @@ export default function TasksScreen() {
     await setData('scheduleCompletion_' + TODAY(), comp);
   };
 
+  const toggleSkip = async (id: string) => {
+    const next = skipped.includes(id) ? skipped.filter(x => x !== id) : [...skipped, id];
+    setSkipped(next);
+    await setData('scheduleOverride_' + TODAY(), { skipped: next });
+  };
+
   const openAddSchedule = () => {
-    setEditId(''); setTaskName(''); setTaskStart(''); setTaskEnd(''); setTaskCategory('work');
+    setEditId(''); setTaskName(''); setTaskStart('09:00'); setTaskEnd('10:00'); setTaskCategory('work');
     setSchedModal(true);
   };
   const openEditSchedule = (task: ScheduleTask) => {
@@ -117,8 +131,6 @@ export default function TasksScreen() {
 
   const saveScheduleTask = async () => {
     if (!taskName.trim()) { Alert.alert('Missing', 'Enter a task name.'); return; }
-    if (!TIME_RE.test(taskStart)) { Alert.alert('Invalid', 'Start must be HH:MM.'); return; }
-    if (!TIME_RE.test(taskEnd)) { Alert.alert('Invalid', 'End must be HH:MM.'); return; }
     if (timeToMin(taskEnd) <= timeToMin(taskStart)) { Alert.alert('Invalid', 'End must be after start.'); return; }
     const t = [...scheduleTasks];
     if (editId) {
@@ -129,7 +141,7 @@ export default function TasksScreen() {
     }
     t.sort((a, b) => a.start.localeCompare(b.start));
     setScheduleTasks(t);
-    await setData('schedule_' + todayType, t);
+    await setData('schedule_' + todayKey, t);
     setSchedModal(false);
   };
 
@@ -138,7 +150,7 @@ export default function TasksScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         const t = scheduleTasks.filter(x => x.id !== id);
-        setScheduleTasks(t); await setData('schedule_' + todayType, t);
+        setScheduleTasks(t); await setData('schedule_' + todayKey, t);
       }},
     ]);
   };
@@ -168,8 +180,10 @@ export default function TasksScreen() {
 
   // ── Derived ───────────────────────────────────────────────────────
   const nowMin = NOW_MINUTES();
+  const skipSet = new Set(skipped);
   const habitDone = habits.filter(h => habitData[h]).length;
-  const schedDone = scheduleTasks.filter(t => completion[t.id]).length;
+  const activeSched = scheduleTasks.filter(t => !skipSet.has(t.id)); // skipped tasks don't count today
+  const schedDone = activeSched.filter(t => completion[t.id]).length;
   const manualDone = manualTasks.filter(t => t.done).length;
   const categories = ['fitness', 'work', 'learning', 'personal', 'meal', 'sleep', 'date', 'skill'];
 
@@ -186,7 +200,7 @@ export default function TasksScreen() {
           <Text style={styles.todayDate}>{fullDate}</Text>
         </View>
         <View style={[styles.progressBadge, { borderColor: C + '50', backgroundColor: C + '12' }]}>
-          <Text style={[styles.progressNum, { color: C }]}>{schedDone + manualDone}/{scheduleTasks.length + manualTasks.length}</Text>
+          <Text style={[styles.progressNum, { color: C }]}>{schedDone + manualDone}/{activeSched.length + manualTasks.length}</Text>
           <Text style={styles.progressLabel}>tasks</Text>
         </View>
       </View>
@@ -211,21 +225,24 @@ export default function TasksScreen() {
         })}
       </Card>
 
-      {/* ── SUNDAY CATCHUP ───────────────────────────────────── */}
+      {/* ── BACKLOG / CATCHUP (past 7 days, any day) ─────────── */}
       {catchupItems.length > 0 && (
-        <Card title="Week's Leftover" badge={`${catchupItems.length}`} badgeColor={C} accentColor={C}>
+        <Card title="Backlog" badge={`${catchupItems.length}`} badgeColor={C} accentColor={C}>
           {catchupItems.map((item, i) => {
-            const col = CATEGORY_COLORS[item.task.category] || C;
+            const col = CATEGORY_COLORS[item.category] || C;
             return (
-              <View key={i} style={styles.catchupItem}>
+              <View key={item.date + item.taskId + i} style={styles.catchupItem}>
                 <View style={[styles.catchupDot, { backgroundColor: col }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.catchupName}>{item.task.name}</Text>
-                  <Text style={styles.catchupMeta}>{item.date}  ·  {formatTime12(item.task.start)}–{formatTime12(item.task.end)}</Text>
+                  <Text style={styles.catchupName}>{item.name}</Text>
+                  <Text style={styles.catchupMeta}>{item.date}  ·  {formatTime12(item.start)}–{formatTime12(item.end)}</Text>
                 </View>
-                <View style={[styles.catChip, { backgroundColor: col + '20' }]}>
-                  <Text style={[styles.catChipTxt, { color: col }]}>{item.task.category}</Text>
-                </View>
+                <TouchableOpacity style={[styles.backlogAction, { borderColor: C + '50' }]} onPress={() => carryBacklog(item)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                  <Text style={[styles.backlogActionTxt, { color: C }]}>Carry →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.backlogAction, { borderColor: Colors.border }]} onPress={() => dismissBacklog(item.date, item.taskId)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                  <Text style={[styles.backlogActionTxt, { color: Colors.textMuted }]}>Dismiss</Text>
+                </TouchableOpacity>
               </View>
             );
           })}
@@ -246,14 +263,15 @@ export default function TasksScreen() {
         </View>
       ) : scheduleTasks.map(t => {
         const sMin = timeToMin(t.start), eMin = timeToMin(t.end);
-        const done = !!completion[t.id];
-        const isActive = nowMin >= sMin && nowMin < eMin && !done;
+        const isSkipped = skipSet.has(t.id);
+        const done = !isSkipped && !!completion[t.id];
+        const isActive = nowMin >= sMin && nowMin < eMin && !done && !isSkipped;
         const col = CATEGORY_COLORS[t.category] || C;
         return (
           <TouchableOpacity
             key={t.id}
-            style={[styles.taskItem, { borderLeftColor: done ? Colors.surfaceHighest : col }, isActive && { backgroundColor: col + '10' }]}
-            onPress={() => toggleScheduleTask(t.id)}
+            style={[styles.taskItem, { borderLeftColor: done || isSkipped ? Colors.surfaceHighest : col }, isActive && { backgroundColor: col + '10' }, isSkipped && styles.taskItemSkipped]}
+            onPress={() => { if (!isSkipped) toggleScheduleTask(t.id); }}
             onLongPress={() => openEditSchedule(t)}
             activeOpacity={0.8}
           >
@@ -261,7 +279,7 @@ export default function TasksScreen() {
               {done && <Text style={styles.taskCheckMark}>✓</Text>}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.taskName, done && styles.taskNameDone]}>{t.name}</Text>
+              <Text style={[styles.taskName, (done || isSkipped) && styles.taskNameDone]}>{t.name}</Text>
               <Text style={styles.taskTime}>{formatTime12(t.start)} – {formatTime12(t.end)}</Text>
             </View>
             {isActive && (
@@ -269,10 +287,19 @@ export default function TasksScreen() {
                 <Text style={[styles.nowTxt, { color: col }]}>NOW</Text>
               </View>
             )}
-            <View style={[styles.catChip, { backgroundColor: col + '20' }]}>
-              <Text style={[styles.catChipTxt, { color: col }]}>{t.category}</Text>
-            </View>
-            <TouchableOpacity onPress={() => deleteScheduleTask(t.id, t.name)} hitSlop={{ top: 8, bottom: 8, left: 12, right: 8 }}>
+            {isSkipped ? (
+              <View style={[styles.catChip, { backgroundColor: Colors.yellow + '20' }]}>
+                <Text style={[styles.catChipTxt, { color: Colors.yellow }]}>skipped</Text>
+              </View>
+            ) : (
+              <View style={[styles.catChip, { backgroundColor: col + '20' }]}>
+                <Text style={[styles.catChipTxt, { color: col }]}>{t.category}</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={() => toggleSkip(t.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 6 }}>
+              <Text style={[styles.skipBtn, isSkipped && { color: Colors.yellow }]}>{isSkipped ? '↺' : '⤫'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => deleteScheduleTask(t.id, t.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Text style={{ color: Colors.textMuted, fontSize: 14 }}>✕</Text>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -319,8 +346,8 @@ export default function TasksScreen() {
       {/* ── SCHEDULE TASK MODAL ───────────────────────────────── */}
       <ModalSheet visible={schedModal} onClose={() => setSchedModal(false)} title={editId ? 'Edit Task' : 'Add Scheduled Task'} accentColor={C}>
         <FormField label="Task Name" value={taskName} onChangeText={setTaskName} placeholder="e.g. Morning workout" />
-        <FormField label="Start Time (HH:MM)" value={taskStart} onChangeText={setTaskStart} placeholder="09:00" keyboardType="numbers-and-punctuation" />
-        <FormField label="End Time (HH:MM)" value={taskEnd} onChangeText={setTaskEnd} placeholder="10:00" keyboardType="numbers-and-punctuation" />
+        <TimeField label="Start Time" value={taskStart || '09:00'} onChange={setTaskStart} accentColor={C} />
+        <TimeField label="End Time" value={taskEnd || '10:00'} onChange={setTaskEnd} accentColor={C} />
         <FormField label="Category">
           <View style={styles.catGrid}>
             {categories.map(c => {
@@ -379,6 +406,8 @@ const styles = StyleSheet.create({
     padding: 14, marginBottom: 8, gap: 12, borderLeftWidth: 3,
     borderWidth: 1, borderColor: Colors.border,
   },
+  taskItemSkipped: { opacity: 0.5 },
+  skipBtn: { color: Colors.textMuted, fontSize: 15, fontWeight: '700' },
   taskCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
   taskCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
   taskName: { color: Colors.text, fontSize: 14, fontWeight: '700' },
@@ -393,6 +422,8 @@ const styles = StyleSheet.create({
   catchupDot: { width: 8, height: 8, borderRadius: 4 },
   catchupName: { color: Colors.text, fontSize: 13, fontWeight: '600' },
   catchupMeta: { color: Colors.textMuted, fontSize: 10, marginTop: 2 },
+  backlogAction: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  backlogActionTxt: { fontSize: 10, fontWeight: '700' },
 
   addRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   addInput: { flex: 1, backgroundColor: Colors.card, borderRadius: 14, color: Colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: Colors.border },

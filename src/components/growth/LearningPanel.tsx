@@ -2,14 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
-import { Colors, LEARNING_ROTATION, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
-import { TODAY, addDays, getDayOfWeek, uid } from '../../src/utils/helpers';
-import { getData, setData } from '../../src/utils/storage';
-import { Card } from '../../src/components/Card';
-import { Button } from '../../src/components/Button';
-import { ProgressBar } from '../../src/components/ProgressBar';
-import { ModalSheet } from '../../src/components/ModalSheet';
-import { FormField } from '../../src/components/FormField';
+import { Colors, LEARNING_ROTATION, TAB_COLORS, TAB_PALETTE } from '../../constants/theme';
+import { TODAY, addDays, getDayOfWeek, uid } from '../../utils/helpers';
+import { getData, setData } from '../../utils/storage';
+import { Card } from '../Card';
+import { Button } from '../Button';
+import { ProgressBar } from '../ProgressBar';
+import { ModalSheet } from '../ModalSheet';
+import { FormField } from '../FormField';
 
 const C = TAB_COLORS.learning; // orange
 const P = TAB_PALETTE.learning;
@@ -20,7 +20,7 @@ type StudyLog = { id: string; domainId: string; domainName: string; hours: numbe
 
 const DAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export default function LearningScreen() {
+export function LearningPanel() {
   const [logDate, setLogDate] = useState(TODAY());
   const [refreshing, setRefreshing] = useState(false);
   const [domains, setDomains] = useState<Domain[]>([]);

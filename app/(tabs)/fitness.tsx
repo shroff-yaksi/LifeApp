@@ -9,6 +9,7 @@ import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
+import { TimeField } from '../../src/components/TimeField';
 
 const C = TAB_COLORS.fitness; // green
 const P = TAB_PALETTE.fitness;
@@ -317,7 +318,7 @@ export default function FitnessScreen() {
             <Text style={styles.manageActionIcon}>⚖️</Text>
             <Text style={[styles.manageActionLabel, { color: C }]}>Log Weight</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.manageAction, { borderColor: P.border, backgroundColor: P.bg }]} onPress={() => { setManageModal(false); setSDate(TODAY()); setSBedtime(''); setSWaketime(''); setSleepModal(true); }}>
+          <TouchableOpacity style={[styles.manageAction, { borderColor: P.border, backgroundColor: P.bg }]} onPress={() => { setManageModal(false); setSDate(TODAY()); setSBedtime('23:00'); setSWaketime('07:00'); setSleepModal(true); }}>
             <Text style={styles.manageActionIcon}>😴</Text>
             <Text style={[styles.manageActionLabel, { color: P.text }]}>Log Sleep</Text>
           </TouchableOpacity>
@@ -344,8 +345,8 @@ export default function FitnessScreen() {
       {/* Log Sleep Modal */}
       <ModalSheet visible={sleepModal} onClose={() => setSleepModal(false)} title="Log Sleep" accentColor={Colors.cyan}>
         <FormField label="Date" value={sDate} onChangeText={setSDate} placeholder="YYYY-MM-DD" />
-        <FormField label="Bedtime (HH:MM)" value={sBedtime} onChangeText={setSBedtime} placeholder="23:15" keyboardType="numbers-and-punctuation" />
-        <FormField label="Wake Time (HH:MM)" value={sWaketime} onChangeText={setSWaketime} placeholder="06:30" keyboardType="numbers-and-punctuation" />
+        <TimeField label="Bedtime" value={sBedtime || '23:00'} onChange={setSBedtime} accentColor={Colors.cyan} />
+        <TimeField label="Wake Time" value={sWaketime || '07:00'} onChange={setSWaketime} accentColor={Colors.cyan} />
         <View style={styles.modalActions}>
           <Button title="Cancel" variant="outline" onPress={() => setSleepModal(false)} />
           <Button title="Save" onPress={saveSleep} color={Colors.cyan} />

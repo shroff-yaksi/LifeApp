@@ -29,6 +29,15 @@ export const getDayType = (date: string | Date): 'weekday' | 'saturday' | 'sunda
   return d === 0 ? 'sunday' : d === 6 ? 'saturday' : 'weekday';
 };
 
+// 7-day schedule template keys — indexed by JS getDay() (0=Sun … 6=Sat)
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+export type DayKey = typeof DAY_KEYS[number];
+
+export const getDayKey = (date: string | Date): DayKey => {
+  const d = (date instanceof Date ? date : new Date(date + 'T00:00:00')).getDay();
+  return DAY_KEYS[d];
+};
+
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));

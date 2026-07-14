@@ -20,8 +20,12 @@ mood:
     5: Great
 
 day_type:
-  description: Which schedule template applies to a date.
+  description: Legacy 3-way schedule grouping (pre-v1.2). Superseded by schedule_day; old keys readable one release.
   values: [weekday, saturday, sunday]
+
+schedule_day:
+  description: 7-day schedule template suffix (v1.2+). Suffix on schedule_{day} keys, from getDayKey(date).
+  values: [mon, tue, wed, thu, fri, sat, sun]
 
 day_of_week:
   description: JS getDay() index used by learning rotation and date helpers.

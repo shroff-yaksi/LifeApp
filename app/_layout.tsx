@@ -1,11 +1,21 @@
-import { useEffect } from 'react';
-import { Linking } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { Colors } from '../src/constants/theme';
+import { runMigrations } from '../src/utils/migrate';
 
 export default function RootLayout() {
+  const [ready, setReady] = useState(false);
+
+  // Run schema migrations before any screen reads data (fail-open: reads have fallbacks)
+  useEffect(() => {
+    runMigrations()
+      .catch(e => console.warn('Migration failed:', e))
+      .finally(() => setReady(true));
+  }, []);
+
   useEffect(() => {
     // When user taps an alarm notification → open music deep link
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
@@ -16,6 +26,15 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  if (!ready) {
+    return (
+      <>
+        <StatusBar style="light" backgroundColor={Colors.bg} translucent={false} />
+        <View style={{ flex: 1, backgroundColor: Colors.bg }} />
+      </>
+    );
+  }
 
   return (
     <>

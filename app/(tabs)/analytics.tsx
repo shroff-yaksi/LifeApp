@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, Activ
 import { useFocusEffect } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { Colors, DEFAULT_HABITS, TAB_COLORS } from '../../src/constants/theme';
-import { TODAY, getDayType } from '../../src/utils/helpers';
+import { TODAY, getDayKey } from '../../src/utils/helpers';
 import { getData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
 
@@ -61,7 +61,7 @@ export default function AnalyticsScreen() {
       const done = habits.filter(h => hd[h]).length;
       const habitPct = habits.length ? Math.round((done / habits.length) * 100) : 0;
       const sleepEntry = sleepLog.find(s => s.date === ds);
-      const dt = getDayType(ds);
+      const dt = getDayKey(ds);
       const tasks = await getData<any[]>('schedule_' + dt, []);
       const comp = await getData<Record<string, any>>('scheduleCompletion_' + ds, {});
       const gym = tasks.some(t => t.category === 'fitness' && comp[t.id]);

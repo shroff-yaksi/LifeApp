@@ -1,15 +1,57 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
-import { TODAY, addDays, getDayType, formatTime12, timeToMin, NOW_MINUTES } from '../../src/utils/helpers';
+import { TODAY, addDays, getDayKey, getWeekStart, formatTime12, timeToMin, NOW_MINUTES } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
-import { getBacklogItems } from '../../src/utils/aggregates';
+import { getBacklogItems, getWeeklyAggregates, WeeklyStats } from '../../src/utils/aggregates';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
 
 const C = TAB_COLORS.index;
 const P = TAB_PALETTE.index;
+
+const MOODS = [
+  { level: 1, emoji: '😞', label: 'Rough', color: Colors.red },
+  { level: 2, emoji: '😕', label: 'Low', color: Colors.orange },
+  { level: 3, emoji: '😐', label: 'Okay', color: Colors.yellow },
+  { level: 4, emoji: '🙂', label: 'Good', color: Colors.green },
+  { level: 5, emoji: '😄', label: 'Great', color: Colors.cyan },
+];
+
+const SHORTCUTS = [
+  { icon: '📓', label: 'Journal', route: '/(tabs)/journal' },
+  { icon: '💰', label: 'Finance', route: '/(tabs)/finance' },
+  { icon: '📊', label: 'Analytics', route: '/(tabs)/analytics' },
+  { icon: '⏰', label: 'Alarms', route: '/(tabs)/alarms' },
+];
+
+const pctOf = (v: number, goal: number) => (goal > 0 ? Math.min(100, (v / goal) * 100) : 0);
+
+// A compact circular progress ring (weekly goal at a glance)
+function GoalRing({ pct, color, label }: { pct: number; color: string; label: string }) {
+  const size = 58, stroke = 5, r = (size - stroke) / 2, circ = 2 * Math.PI * r;
+  const dash = circ * (pct / 100);
+  return (
+    <View style={styles.ring}>
+      <View style={{ width: size, height: size }}>
+        <Svg width={size} height={size}>
+          <Circle cx={size / 2} cy={size / 2} r={r} stroke={Colors.surfaceHighest} strokeWidth={stroke} fill="none" />
+          <Circle
+            cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        </Svg>
+        <View style={styles.ringCenter}>
+          <Text style={styles.ringPct}>{Math.round(pct)}%</Text>
+        </View>
+      </View>
+      <Text style={styles.ringLabel}>{label}</Text>
+    </View>
+  );
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -24,8 +66,10 @@ export default function DashboardScreen() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [completion, setCompletion] = useState<Record<string, any>>({});
   const [refreshing, setRefreshing] = useState(false);
-  const [pomodoroCount, setPomodoroCount] = useState(0);
   const [backlog, setBacklog] = useState<any[]>([]);
+  const [weekly, setWeekly] = useState<WeeklyStats | null>(null);
+  const [goals, setGoals] = useState(DEFAULT_GOALS);
+  const [mood, setMood] = useState<number | undefined>(undefined);
 
   const loadData = useCallback(async () => {
     const h = new Date().getHours();
@@ -41,10 +85,12 @@ export default function DashboardScreen() {
     }
     setStreak(Math.max(1, s));
 
-    const dayType = getDayType(TODAY());
-    const t = await getData<any[]>('schedule_' + dayType, []);
+    const dayKey = getDayKey(TODAY());
+    const t = await getData<any[]>('schedule_' + dayKey, []);
     const comp = await getData<Record<string, any>>('scheduleCompletion_' + TODAY(), {});
-    setTasks(t);
+    const ov = await getData<{ skipped?: string[] }>('scheduleOverride_' + TODAY(), {});
+    const sk = new Set(ov.skipped || []);
+    setTasks(t.filter(x => !sk.has(x.id))); // skipped-today tasks drop off the glance
     setCompletion(comp);
 
     const hList = await getData<string[]>('habits', DEFAULT_HABITS);
@@ -61,10 +107,13 @@ export default function DashboardScreen() {
       setCigTimer(`${Math.floor(mins / 60)}h ${mins % 60}m ago`);
     } else { setCigTimer(''); }
 
-    setPomodoroCount(await getData<number>('pomodoro_' + TODAY(), 0));
-
     const bl = await getBacklogItems();
     setBacklog(bl.slice(0, 5));
+
+    setGoals(await getData('goals', DEFAULT_GOALS));
+    setWeekly(await getWeeklyAggregates(getWeekStart(TODAY())));
+    const je = await getData<{ mood?: number }>('journal_' + TODAY(), {});
+    setMood(je.mood);
   }, []);
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
@@ -108,6 +157,13 @@ export default function DashboardScreen() {
       const mins = Math.floor((Date.now() - last.getTime()) / 60000);
       setCigTimer(`${Math.floor(mins / 60)}h ${mins % 60}m ago`);
     } else { setCigTimer(''); }
+  };
+
+  const setMoodQuick = async (level: number) => {
+    const next = mood === level ? undefined : level;
+    setMood(next);
+    const je = await getData<Record<string, any>>('journal_' + TODAY(), {});
+    await setData('journal_' + TODAY(), { ...je, mood: next, updatedAt: new Date().toISOString() });
   };
 
   const nowMin = NOW_MINUTES();
@@ -215,15 +271,6 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={[styles.trackerBox, { borderColor: P.border, backgroundColor: P.bg }]}>
-            <Text style={styles.trackerBoxIcon}>⏱</Text>
-            <Text style={[styles.trackerBoxVal, { color: P.text }]}>{pomodoroCount}</Text>
-            <Text style={styles.trackerBoxLabel}>sessions</Text>
-            <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: P.bgMid, paddingHorizontal: 16, marginTop: 4 }]} onPress={() => router.push('/timer')}>
-              <Text style={[styles.trackerBtnTxt, { color: C, fontSize: 10 }]}>START</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </Card>
 
@@ -253,6 +300,55 @@ export default function DashboardScreen() {
           </View>
         </Card>
       )}
+
+      {/* ── QUICK MOOD ───────────────────────────────────────── */}
+      <Card title="Today's Mood" accentColor={C}>
+        <View style={styles.moodRow}>
+          {MOODS.map(m => {
+            const sel = mood === m.level;
+            return (
+              <TouchableOpacity
+                key={m.level}
+                style={[styles.moodBtn, { borderColor: P.border }, sel && { borderColor: m.color, backgroundColor: m.color + '20' }]}
+                onPress={() => setMoodQuick(m.level)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                <Text style={[styles.moodLbl, sel && { color: m.color }]}>{m.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Card>
+
+      {/* ── WEEKLY GOAL RINGS ────────────────────────────────── */}
+      {weekly && (
+        <Card title="This Week" accentColor={C}>
+          <View style={styles.ringRow}>
+            <GoalRing label="Gym" color={Colors.green} pct={pctOf(weekly.gymCount, goals.weeklyGym)} />
+            <GoalRing label="Study" color={Colors.orange} pct={pctOf(weekly.studyHours, goals.weeklyStudyHours)} />
+            <GoalRing label="Water" color={Colors.cyan} pct={pctOf(weekly.totalWater, goals.weeklyWater)} />
+            <GoalRing label="Sleep" color={Colors.purple} pct={pctOf(weekly.avgSleep, goals.weeklySleepAvg)} />
+          </View>
+        </Card>
+      )}
+
+      {/* ── HIDDEN-TAB SHORTCUTS ─────────────────────────────── */}
+      <Card title="Jump To" accentColor={C}>
+        <View style={styles.shortcutRow}>
+          {SHORTCUTS.map(s => (
+            <TouchableOpacity
+              key={s.route}
+              style={[styles.shortcut, { borderColor: P.border, backgroundColor: P.bg }]}
+              onPress={() => router.push(s.route as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.shortcutIcon}>{s.icon}</Text>
+              <Text style={styles.shortcutLbl}>{s.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
 
       {/* ── MISSED TASKS ─────────────────────────────────────── */}
       {backlog.length > 0 && (
@@ -326,6 +422,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   habitChipTxt: { fontSize: 11, fontWeight: '600' },
+
+  ring: { alignItems: 'center', flex: 1 },
+  ringRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  ringCenter: { position: 'absolute', width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
+  ringPct: { color: Colors.text, fontSize: 12, fontWeight: '800' },
+  ringLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
+
+  moodRow: { flexDirection: 'row', gap: 8 },
+  moodBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 14, borderWidth: 1, backgroundColor: Colors.surface, gap: 3 },
+  moodEmoji: { fontSize: 22 },
+  moodLbl: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
+
+  shortcutRow: { flexDirection: 'row', gap: 8 },
+  shortcut: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1, backgroundColor: Colors.surface, gap: 5 },
+  shortcutIcon: { fontSize: 20 },
+  shortcutLbl: { color: Colors.textSecondary, fontSize: 10, fontWeight: '700' },
 
   backlogItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 6 },
   backlogDot: { width: 8, height: 8, borderRadius: 4 },

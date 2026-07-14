@@ -2,14 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BarChart } from 'react-native-chart-kit';
-import { Colors, SKILL_LIST as DEFAULT_SKILL_LIST, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
-import { TODAY, addDays, getWeekStart, uid } from '../../src/utils/helpers';
-import { getData, setData } from '../../src/utils/storage';
-import { Card } from '../../src/components/Card';
-import { Button } from '../../src/components/Button';
-import { ProgressBar } from '../../src/components/ProgressBar';
-import { ModalSheet } from '../../src/components/ModalSheet';
-import { FormField } from '../../src/components/FormField';
+import { Colors, SKILL_LIST as DEFAULT_SKILL_LIST, TAB_COLORS, TAB_PALETTE } from '../../constants/theme';
+import { TODAY, addDays, getWeekStart, uid } from '../../utils/helpers';
+import { getData, setData } from '../../utils/storage';
+import { Card } from '../Card';
+import { Button } from '../Button';
+import { ProgressBar } from '../ProgressBar';
+import { ModalSheet } from '../ModalSheet';
+import { FormField } from '../FormField';
 
 const C = TAB_COLORS.skills; // pink
 const P = TAB_PALETTE.skills;
@@ -25,7 +25,7 @@ function getSkillEmoji(skill: string): string {
   return SKILL_EMOJIS[skill] || '⭐';
 }
 
-export default function SkillsScreen() {
+export function SkillsPanel() {
   const [logDate, setLogDate] = useState(TODAY());
   const [refreshing, setRefreshing] = useState(false);
   const [skillList, setSkillList] = useState<string[]>(DEFAULT_SKILL_LIST);

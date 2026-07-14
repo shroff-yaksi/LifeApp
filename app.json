@@ -26,6 +26,7 @@
         "backgroundColor": "#09090b"
       },
       "package": "com.yaksishroff.lifeos",
+      "allowBackup": true,
       "runtimeVersion": {
         "policy": "appVersion"
       }
@@ -42,7 +43,9 @@
           "color": "#6366f1"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker",
+      "./plugins/withAndroidAutoBackup"
     ],
     "extra": {
       "router": {

@@ -1,5 +1,5 @@
 import { getData } from './storage';
-import { TODAY, addDays, getDayType } from './helpers';
+import { TODAY, addDays, getDayKey } from './helpers';
 import { DEFAULT_HABITS } from '../constants/theme';
 
 export type WeeklyStats = {
@@ -30,7 +30,7 @@ export async function getWeeklyAggregates(weekStart: string): Promise<WeeklyStat
     const hd = await getData<Record<string, boolean>>('habitData_' + ds, {});
     habits.forEach(h => { habitTotal++; if (hd[h]) habitDone++; });
 
-    const dt = getDayType(ds);
+    const dt = getDayKey(ds);
     const tasks = await getData<any[]>('schedule_' + dt, []);
     const comp = await getData<Record<string, any>>('scheduleCompletion_' + ds, {});
     tasks.filter((t: any) => t.category === 'fitness').forEach((t: any) => { if (comp[t.id]) gymCount++; });
@@ -70,12 +70,14 @@ export async function getBacklogItems(): Promise<any[]> {
   const items: any[] = [];
   for (let i = 1; i <= 7; i++) {
     const ds = addDays(TODAY(), -i);
-    const dt = getDayType(ds);
+    const dt = getDayKey(ds);
     const tasks = await getData<any[]>('schedule_' + dt, []);
     const comp = await getData<Record<string, any>>('scheduleCompletion_' + ds, {});
+    const ov = await getData<{ skipped?: string[] }>('scheduleOverride_' + ds, {});
+    const sk = new Set(ov.skipped || []);
     tasks.forEach(t => {
-      if (!comp[t.id] && t.category !== 'sleep' && t.category !== 'meal') {
-        items.push({ date: ds, name: t.name, taskId: t.id, category: t.category });
+      if (!comp[t.id] && !sk.has(t.id) && t.category !== 'sleep' && t.category !== 'meal') {
+        items.push({ date: ds, name: t.name, taskId: t.id, category: t.category, start: t.start, end: t.end });
       }
     });
   }

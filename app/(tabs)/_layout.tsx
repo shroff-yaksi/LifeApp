@@ -1,5 +1,5 @@
-import { Tabs, useRouter } from 'expo-router';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors, TAB_COLORS } from '../../src/constants/theme';
@@ -10,8 +10,7 @@ const TAB_ICONS: Record<string, { outline: IoniconName; filled: IoniconName }> =
   Dashboard: { outline: 'grid-outline',           filled: 'grid' },
   Tasks:     { outline: 'checkmark-done-outline',  filled: 'checkmark-done' },
   Fitness:   { outline: 'barbell-outline',         filled: 'barbell' },
-  Learning:  { outline: 'book-outline',            filled: 'book' },
-  Skills:    { outline: 'flash-outline',           filled: 'flash' },
+  Growth:    { outline: 'trending-up-outline',     filled: 'trending-up' },
   Settings:  { outline: 'settings-outline',        filled: 'settings' },
 };
 
@@ -19,8 +18,7 @@ const TAB_ROUTES: Record<string, string> = {
   Dashboard: 'index',
   Tasks:     'tasks',
   Fitness:   'fitness',
-  Learning:  'learning',
-  Skills:    'skills',
+  Growth:    'growth',
   Settings:  'settings',
 };
 
@@ -54,29 +52,6 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   );
 }
 
-function TimerButton() {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      onPress={() => router.push('/timer')}
-      style={{
-        marginRight: 14,
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        backgroundColor: Colors.surface,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      activeOpacity={0.65}
-    >
-      <Text style={{ fontSize: 14 }}>⏱</Text>
-    </TouchableOpacity>
-  );
-}
-
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = 60 + insets.bottom;
@@ -87,7 +62,6 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: Colors.bg, elevation: 0, shadowOpacity: 0 },
         headerTintColor: Colors.textSecondary,
         headerTitleStyle: { fontWeight: '600', fontSize: 15, letterSpacing: -0.2, color: Colors.text },
-        headerRight: () => <TimerButton />,
         tabBarStyle: {
           backgroundColor: Colors.card,
           borderTopColor: Colors.border,
@@ -126,19 +100,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="learning"
+        name="growth"
         options={{
-          title: 'Learning',
-          tabBarIcon: ({ focused }) => <TabIcon label="Learning" focused={focused} />,
-          tabBarActiveTintColor: TAB_COLORS.learning,
-        }}
-      />
-      <Tabs.Screen
-        name="skills"
-        options={{
-          title: 'Skills',
-          tabBarIcon: ({ focused }) => <TabIcon label="Skills" focused={focused} />,
-          tabBarActiveTintColor: TAB_COLORS.skills,
+          title: 'Growth',
+          tabBarIcon: ({ focused }) => <TabIcon label="Growth" focused={focused} />,
+          tabBarActiveTintColor: TAB_COLORS.growth,
         }}
       />
       <Tabs.Screen

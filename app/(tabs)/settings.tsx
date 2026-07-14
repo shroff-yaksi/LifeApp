@@ -6,7 +6,22 @@ import { getData, setData, exportAllData, getAllKeys, removeData, importAllData 
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { FormField } from '../../src/components/FormField';
+import { TimeField } from '../../src/components/TimeField';
 import { ModalSheet } from '../../src/components/ModalSheet';
+
+const REMINDER_FIELDS: { key: string; label: string; fallback: string }[] = [
+  { key: 'gymTime', label: '💪 Gym', fallback: '06:30' },
+  { key: 'skincareTime', label: '🌿 Morning skincare', fallback: '07:00' },
+  { key: 'breakfastTime', label: '🍳 Breakfast', fallback: '09:00' },
+  { key: 'lunchTime', label: '🥗 Lunch', fallback: '13:00' },
+  { key: 'snackTime', label: '🍎 Snack', fallback: '16:30' },
+  { key: 'dinnerTime', label: '🍽️ Dinner', fallback: '19:30' },
+  { key: 'habitsCheckTime', label: '✅ Habits nudge', fallback: '20:00' },
+  { key: 'dailyLogTime', label: '📋 Daily log', fallback: '21:00' },
+  { key: 'readingTime', label: '📚 Reading / phone down', fallback: '22:00' },
+  { key: 'journalTime', label: '📓 Journal', fallback: '22:45' },
+  { key: 'sleepReminder', label: '😴 Sleep wind-down', fallback: '23:00' },
+];
 import { scheduleAllReminders, cancelAllReminders, sendTestNotification, requestPermissions } from '../../src/utils/notifications';
 
 const C = TAB_COLORS.settings;
@@ -326,17 +341,15 @@ export default function SettingsScreen() {
 
       {/* Notification Settings Modal */}
       <ModalSheet visible={notifModal} onClose={() => setNotifModal(false)} title="Reminder Times" accentColor={Colors.accentLight}>
-        <FormField label="💪 Gym (HH:MM)" value={notifEdits['gymTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, gymTime: v }))} placeholder="06:30" />
-        <FormField label="🌿 Morning skincare (HH:MM)" value={notifEdits['skincareTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, skincareTime: v }))} placeholder="07:00" />
-        <FormField label="🍳 Breakfast (HH:MM)" value={notifEdits['breakfastTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, breakfastTime: v }))} placeholder="09:00" />
-        <FormField label="🥗 Lunch (HH:MM)" value={notifEdits['lunchTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, lunchTime: v }))} placeholder="13:00" />
-        <FormField label="🍎 Snack (HH:MM)" value={notifEdits['snackTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, snackTime: v }))} placeholder="16:30" />
-        <FormField label="🍽️ Dinner (HH:MM)" value={notifEdits['dinnerTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, dinnerTime: v }))} placeholder="19:30" />
-        <FormField label="✅ Habits nudge (HH:MM)" value={notifEdits['habitsCheckTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, habitsCheckTime: v }))} placeholder="20:00" />
-        <FormField label="📋 Daily log (HH:MM)" value={notifEdits['dailyLogTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, dailyLogTime: v }))} placeholder="21:00" />
-        <FormField label="📚 Reading / phone down (HH:MM)" value={notifEdits['readingTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, readingTime: v }))} placeholder="22:00" />
-        <FormField label="📓 Journal (HH:MM)" value={notifEdits['journalTime'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, journalTime: v }))} placeholder="22:45" />
-        <FormField label="😴 Sleep wind-down (HH:MM)" value={notifEdits['sleepReminder'] || ''} onChangeText={v => setNotifEdits(p => ({ ...p, sleepReminder: v }))} placeholder="23:00" />
+        {REMINDER_FIELDS.map(f => (
+          <TimeField
+            key={f.key}
+            label={f.label}
+            value={notifEdits[f.key] || f.fallback}
+            onChange={v => setNotifEdits(p => ({ ...p, [f.key]: v }))}
+            accentColor={Colors.accentLight}
+          />
+        ))}
         <View style={styles.modalBtns}>
           <Button title="Cancel" variant="outline" onPress={() => setNotifModal(false)} />
           <Button title="Save" onPress={saveNotifSettings} color={Colors.accentLight} />

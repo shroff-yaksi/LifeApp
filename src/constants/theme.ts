@@ -80,6 +80,14 @@ export const TAB_PALETTE: Record<string, TabPalette> = {
     bgMid:  'rgba(196,120,58,0.16)',
     border: 'rgba(196,120,58,0.22)',
   },
+  // Growth = merged Learning + Skills tab; carries Learning's orange as its signature
+  growth: {
+    accent: '#c4783a',
+    text:   '#d99a6a',
+    bg:     'rgba(196,120,58,0.08)',
+    bgMid:  'rgba(196,120,58,0.16)',
+    border: 'rgba(196,120,58,0.22)',
+  },
   skills: {
     accent: '#b06090',
     text:   '#cc8fb0',
@@ -103,6 +111,7 @@ export const TAB_COLORS: Record<string, string> = {
   fitness:   '#3aa870', // muted green
   learning:  '#c4783a', // muted orange
   skills:    '#b06090', // muted pink
+  growth:    '#c4783a', // merged Learning + Skills tab (orange signature)
   journal:   '#9580d1', // muted purple
   finance:   '#2b9e8f', // muted teal
   analytics: '#9580d1', // muted purple
