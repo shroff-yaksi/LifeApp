@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, TAB_COLORS, radius } from '../../src/constants/theme';
 import { LearningPanel } from '../../src/components/growth/LearningPanel';
 import { SkillsPanel } from '../../src/components/growth/SkillsPanel';
 
@@ -16,20 +16,25 @@ export default function GrowthScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.segment}>
-        {SEGMENTS.map(s => {
-          const active = section === s.key;
-          return (
-            <TouchableOpacity
-              key={s.key}
-              style={[styles.segBtn, active && { backgroundColor: s.color + '20', borderColor: s.color + '55' }]}
-              onPress={() => setSection(s.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.segTxt, active && { color: s.color }]}>{s.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Segmented control — iOS-style track with a colored active pill */}
+      <View style={styles.segWrap}>
+        <View style={styles.track}>
+          <View style={styles.hairline} pointerEvents="none" />
+          {SEGMENTS.map(s => {
+            const active = section === s.key;
+            return (
+              <TouchableOpacity
+                key={s.key}
+                style={[styles.segBtn, active && { backgroundColor: s.color + '22', borderColor: s.color + '55' }]}
+                onPress={() => setSection(s.key)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.dot, { backgroundColor: active ? s.color : Colors.textMuted }]} />
+                <Text style={[styles.segTxt, { color: active ? s.color : Colors.textSecondary }]}>{s.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
       {section === 'learning' ? <LearningPanel /> : <SkillsPanel />}
     </View>
@@ -38,7 +43,36 @@ export default function GrowthScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  segment: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 2 },
-  segBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
-  segTxt: { color: Colors.textSecondary, fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+  segWrap: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 4 },
+  track: {
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+    borderRadius: radius.pill,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  hairline: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: Colors.innerHighlight,
+  },
+  segBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  segTxt: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 });

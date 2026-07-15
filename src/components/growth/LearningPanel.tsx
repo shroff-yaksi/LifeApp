@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { BarChart } from 'react-native-chart-kit';
-import { Colors, LEARNING_ROTATION, TAB_COLORS, TAB_PALETTE } from '../../constants/theme';
+import { Colors, LEARNING_ROTATION, TAB_COLORS, TAB_PALETTE, radius } from '../../constants/theme';
 import { TODAY, addDays, getDayOfWeek, uid } from '../../utils/helpers';
 import { getData, setData } from '../../utils/storage';
 import { Card } from '../Card';
@@ -10,10 +9,40 @@ import { Button } from '../Button';
 import { ProgressBar } from '../ProgressBar';
 import { ModalSheet } from '../ModalSheet';
 import { FormField } from '../FormField';
+import { AreaChart } from '../AreaChart';
 
 const C = TAB_COLORS.learning; // orange
 const P = TAB_PALETTE.learning;
-const screenW = Dimensions.get('window').width - 48;
+const chartW = Dimensions.get('window').width - 60; // window − container(28) − card(32)
+
+// Smooth SVG weekly-trend, replacing the old chart-kit bars.
+function WeeklyTrend({ data, labels, color }: { data: number[]; labels: string[]; color: string }) {
+  const thisWk = data[data.length - 1] ?? 0;
+  const prev = data[data.length - 2] ?? 0;
+  const delta = thisWk - prev;
+  const up = delta >= 0;
+  return (
+    <View>
+      <View style={styles.trendHead}>
+        <View>
+          <Text style={[styles.trendValue, { color }]}>{thisWk.toFixed(1)}<Text style={styles.trendUnit}>h</Text></Text>
+          <Text style={styles.trendCaption}>this week</Text>
+        </View>
+        {(thisWk > 0 || prev > 0) && (
+          <View style={[styles.trendPill, { backgroundColor: color + '18' }]}>
+            <Text style={[styles.trendPillTxt, { color }]}>{up ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}h</Text>
+          </View>
+        )}
+      </View>
+      <AreaChart data={data} width={chartW} height={100} color={color} min={0} strokeWidth={2.6} />
+      <View style={styles.trendLabels}>
+        {labels.map((l, i) => (
+          <Text key={i} style={[styles.trendLabel, i === labels.length - 1 && { color, fontWeight: '800' }]}>{l}</Text>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 type Domain = { id: string; name: string };
 type StudyLog = { id: string; domainId: string; domainName: string; hours: number; topic: string; date: string; createdAt: string };
@@ -123,10 +152,10 @@ export function LearningPanel() {
     for (let w = 3; w >= 0; w--) {
       let total = 0;
       for (let d = 0; d < 7; d++) total += logs.filter(l => l.date === addDays(TODAY(), -(w * 7 + d))).reduce((s, l) => s + l.hours, 0);
-      labels.push(w === 0 ? 'This Wk' : `W-${w}`);
+      labels.push(w === 0 ? 'This wk' : `${w}w ago`);
       values.push(total);
     }
-    return { labels, datasets: [{ data: values.length ? values : [0] }] };
+    return { labels, values };
   })();
 
   const recentLogs = [...logs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
@@ -240,22 +269,7 @@ export function LearningPanel() {
 
       {/* Weekly Chart */}
       <Card title="Weekly Study Hours" accentColor={C}>
-        <BarChart
-          data={weeklyData}
-          width={screenW}
-          height={180}
-          yAxisLabel=""
-          yAxisSuffix="h"
-          chartConfig={{
-            backgroundGradientFrom: Colors.surface,
-            backgroundGradientTo: Colors.surface,
-            color: (op = 1) => `rgba(251,146,60,${op})`,
-            labelColor: () => Colors.textMuted,
-            decimalPlaces: 1,
-            propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.04)' },
-          }}
-          style={{ borderRadius: 12, overflow: 'hidden' }}
-        />
+        <WeeklyTrend data={weeklyData.values} labels={weeklyData.labels} color={C} />
       </Card>
 
       {/* Manage Button */}
@@ -397,4 +411,12 @@ const styles = StyleSheet.create({
   catBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: Colors.surfaceHigh, borderWidth: 1, borderColor: Colors.border },
   catBtnText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10, marginBottom: 20 },
+  trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  trendValue: { fontSize: 28, fontWeight: '800', letterSpacing: -0.8 },
+  trendUnit: { fontSize: 15, fontWeight: '700', color: Colors.textMuted },
+  trendCaption: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 1 },
+  trendPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill },
+  trendPillTxt: { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
+  trendLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  trendLabel: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
 });

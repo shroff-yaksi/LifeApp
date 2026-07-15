@@ -1,30 +1,50 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, Share, TextInput, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, Share, RefreshControl } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Colors, DEFAULT_REMINDER_SETTINGS, DEFAULT_GOALS, DEFAULT_HABITS, TAB_COLORS } from '../../src/constants/theme';
-import { getData, setData, exportAllData, getAllKeys, removeData, importAllData } from '../../src/utils/storage';
+import { Colors, DEFAULT_REMINDER_SETTINGS, DEFAULT_GOALS, DEFAULT_HABITS, radius } from '../../src/constants/theme';
+import { getData, setData, exportAllData, getAllKeys, removeData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { FormField } from '../../src/components/FormField';
 import { TimeField } from '../../src/components/TimeField';
 import { ModalSheet } from '../../src/components/ModalSheet';
-
-const REMINDER_FIELDS: { key: string; label: string; fallback: string }[] = [
-  { key: 'gymTime', label: '💪 Gym', fallback: '06:30' },
-  { key: 'skincareTime', label: '🌿 Morning skincare', fallback: '07:00' },
-  { key: 'breakfastTime', label: '🍳 Breakfast', fallback: '09:00' },
-  { key: 'lunchTime', label: '🥗 Lunch', fallback: '13:00' },
-  { key: 'snackTime', label: '🍎 Snack', fallback: '16:30' },
-  { key: 'dinnerTime', label: '🍽️ Dinner', fallback: '19:30' },
-  { key: 'habitsCheckTime', label: '✅ Habits nudge', fallback: '20:00' },
-  { key: 'dailyLogTime', label: '📋 Daily log', fallback: '21:00' },
-  { key: 'readingTime', label: '📚 Reading / phone down', fallback: '22:00' },
-  { key: 'journalTime', label: '📓 Journal', fallback: '22:45' },
-  { key: 'sleepReminder', label: '😴 Sleep wind-down', fallback: '23:00' },
-];
 import { scheduleAllReminders, cancelAllReminders, sendTestNotification, requestPermissions } from '../../src/utils/notifications';
 
-const C = TAB_COLORS.settings;
+const REMINDER_FIELDS: { key: string; icon: string; label: string; fallback: string }[] = [
+  { key: 'gymTime', icon: '💪', label: 'Gym', fallback: '06:30' },
+  { key: 'skincareTime', icon: '🌿', label: 'Morning skincare', fallback: '07:00' },
+  { key: 'breakfastTime', icon: '🍳', label: 'Breakfast', fallback: '09:00' },
+  { key: 'lunchTime', icon: '🥗', label: 'Lunch', fallback: '13:00' },
+  { key: 'snackTime', icon: '🍎', label: 'Snack', fallback: '16:30' },
+  { key: 'dinnerTime', icon: '🍽️', label: 'Dinner', fallback: '19:30' },
+  { key: 'habitsCheckTime', icon: '✅', label: 'Habits nudge', fallback: '20:00' },
+  { key: 'dailyLogTime', icon: '📋', label: 'Daily log', fallback: '21:00' },
+  { key: 'readingTime', icon: '📚', label: 'Reading / phone down', fallback: '22:00' },
+  { key: 'journalTime', icon: '📓', label: 'Journal', fallback: '22:45' },
+  { key: 'sleepReminder', icon: '😴', label: 'Sleep wind-down', fallback: '23:00' },
+];
+
+const GOAL_FIELDS = [
+  { key: 'weeklyGymHours', icon: '💪', label: 'Gym hours / week', color: Colors.green, placeholder: '5' },
+  { key: 'weeklyWalkHours', icon: '🚶', label: 'Walking hours / week', color: Colors.teal, placeholder: '7' },
+  { key: 'weeklySwimHours', icon: '🏊', label: 'Swimming hours / week', color: Colors.cyan, placeholder: '3' },
+  { key: 'weeklyJournalDays', icon: '📓', label: 'Journalling days / week', color: Colors.pink, placeholder: '7' },
+  { key: 'weeklyMindfulDays', icon: '🧘', label: 'Mindfulness days / week', color: Colors.purple, placeholder: '7' },
+  { key: 'weeklyStudyHours', icon: '📚', label: 'Study hours / week', color: Colors.orange, placeholder: '10' },
+  { key: 'weeklyCigLimit', icon: '🚬', label: 'Cigarette limit / week', color: Colors.red, placeholder: '5' },
+  { key: 'weeklyWater', icon: '💧', label: 'Water glasses / week', color: Colors.cyan, placeholder: '56' },
+  { key: 'weeklySleepAvg', icon: '😴', label: 'Average sleep (hours)', color: Colors.purple, placeholder: '7.25' },
+  { key: 'weeklySkillHours', icon: '🎸', label: 'Skill hours / week', color: Colors.yellow, placeholder: '8' },
+];
+
+// Leading tinted icon square — the recurring visual anchor for every setting row.
+function IconTile({ emoji, color }: { emoji: string; color: string }) {
+  return (
+    <View style={[styles.tile, { backgroundColor: color + '18', borderColor: color + '2e' }]}>
+      <Text style={styles.tileEmoji}>{emoji}</Text>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -70,7 +90,6 @@ export default function SettingsScreen() {
   };
 
   const handleTestNotification = async () => {
-    // Check permission before sending test
     const granted = await requestPermissions();
     if (!granted) {
       Alert.alert('Permission Required', 'Enable notifications first to send a test.');
@@ -177,27 +196,21 @@ export default function SettingsScreen() {
     );
   };
 
-  const GOAL_FIELDS = [
-    { key: 'weeklyGymHours', label: '💪 Gym hours / week', color: Colors.green, placeholder: '5' },
-    { key: 'weeklyWalkHours', label: '🚶 Walking hours / week', color: Colors.teal, placeholder: '7' },
-    { key: 'weeklySwimHours', label: '🏊 Swimming hours / week', color: Colors.cyan, placeholder: '3' },
-    { key: 'weeklyJournalDays', label: '📓 Journalling days / week', color: Colors.pink, placeholder: '7' },
-    { key: 'weeklyMindfulDays', label: '🧘 Mindfulness days / week', color: Colors.purple, placeholder: '7' },
-    { key: 'weeklyStudyHours', label: '📚 Study hours / week', color: Colors.orange, placeholder: '10' },
-    { key: 'weeklyCigLimit', label: '🚬 Cigarette limit / week', color: Colors.red, placeholder: '5' },
-    { key: 'weeklyWater', label: '💧 Water glasses / week', color: Colors.cyan, placeholder: '56' },
-    { key: 'weeklySleepAvg', label: '😴 Average sleep (hours)', color: Colors.purple, placeholder: '7.25' },
-    { key: 'weeklySkillHours', label: '🎸 Skill hours / week', color: Colors.yellow, placeholder: '8' },
-  ];
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accentLight} />}>
-      {/* Notifications */}
+      {/* ── HEADER ───────────────────────────────────────────── */}
+      <View style={styles.greet}>
+        <Text style={styles.greetDay}>Preferences</Text>
+        <Text style={styles.greetHi}>Settings</Text>
+      </View>
+
+      {/* ── NOTIFICATIONS ────────────────────────────────────── */}
       <Card title="Notifications" accentColor={Colors.accentLight}>
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextCol}>
-            <Text style={styles.settingLabel}>Daily Reminders</Text>
-            <Text style={styles.settingDesc}>Meals · Gym · Habits · Journal · Sleep · Skincare</Text>
+        <View style={[styles.row, styles.rowFirst]}>
+          <IconTile emoji="🔔" color={Colors.accentLight} />
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Daily Reminders</Text>
+            <Text style={styles.rowDesc}>Meals · Gym · Habits · Journal · Sleep</Text>
           </View>
           <Switch
             value={notifEnabled}
@@ -206,20 +219,23 @@ export default function SettingsScreen() {
             thumbColor={notifEnabled ? Colors.accent : Colors.textMuted}
           />
         </View>
-        <TouchableOpacity style={styles.alarmsNavRow} onPress={() => router.push('/(tabs)/alarms')}>
-          <Text style={styles.alarmsNavIcon}>⏰</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alarmsNavLabel}>Alarms</Text>
-            <Text style={styles.alarmsNavDesc}>Wake-up alarms · Spotify & Apple Music</Text>
+
+        <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/(tabs)/alarms')}>
+          <IconTile emoji="⏰" color={Colors.accentLight} />
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Alarms</Text>
+            <Text style={styles.rowDesc}>Wake-up alarms · Spotify & Apple Music</Text>
           </View>
-          <Text style={{ color: Colors.textMuted, fontSize: 18 }}>›</Text>
+          <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
+
         <View style={styles.btnRow}>
           <Button
             title="Configure Times"
             size="sm"
             variant="outline"
             color={Colors.accentLight}
+            style={{ flex: 1 }}
             onPress={() => {
               setNotifEdits(Object.fromEntries(Object.entries(reminderSettings).map(([k, v]) => [k, String(v)])));
               setNotifModal(true);
@@ -230,12 +246,13 @@ export default function SettingsScreen() {
             size="sm"
             variant="ghost"
             color={Colors.accentLight}
+            style={{ flex: 1 }}
             onPress={handleTestNotification}
           />
         </View>
       </Card>
 
-      {/* Weekly Goals */}
+      {/* ── WEEKLY GOALS ─────────────────────────────────────── */}
       <Card
         title="Weekly Goals"
         accentColor={Colors.green}
@@ -252,15 +269,18 @@ export default function SettingsScreen() {
           />
         }
       >
-        {GOAL_FIELDS.map(g => (
-          <View key={g.key} style={styles.goalRow}>
-            <Text style={styles.goalLabel}>{g.label}</Text>
-            <Text style={[styles.goalVal, { color: g.color }]}>{goals[g.key]}</Text>
+        {GOAL_FIELDS.map((g, i) => (
+          <View key={g.key} style={[styles.row, i === 0 && styles.rowFirst]}>
+            <IconTile emoji={g.icon} color={g.color} />
+            <Text style={[styles.rowLabel, styles.rowLabelFlex]}>{g.label}</Text>
+            <View style={[styles.valPill, { backgroundColor: g.color + '14', borderColor: g.color + '2e' }]}>
+              <Text style={[styles.valTxt, { color: g.color }]}>{goals[g.key]}</Text>
+            </View>
           </View>
         ))}
       </Card>
 
-      {/* Habits */}
+      {/* ── DAILY HABITS ─────────────────────────────────────── */}
       <Card
         title="Daily Habits"
         accentColor={Colors.cyan}
@@ -273,24 +293,28 @@ export default function SettingsScreen() {
           />
         }
       >
-        {habits.map(h => (
-          <View key={h} style={styles.habitRow}>
-            <View style={[styles.habitDot, { backgroundColor: Colors.cyan }]} />
-            <Text style={styles.habitText}>{h}</Text>
-            <TouchableOpacity onPress={() => removeHabit(h)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ color: Colors.red, fontSize: 16 }}>✕</Text>
+        {habits.length === 0 ? (
+          <Text style={styles.emptyText}>No habits yet. Add one to track it daily.</Text>
+        ) : habits.map((h, i) => (
+          <View key={h} style={[styles.row, i === 0 && styles.rowFirst]}>
+            <View style={[styles.habitDotWrap, { backgroundColor: Colors.cyan + '18', borderColor: Colors.cyan + '2e' }]}>
+              <View style={[styles.habitDot, { backgroundColor: Colors.cyan }]} />
+            </View>
+            <Text style={[styles.rowLabel, styles.rowLabelFlex]}>{h}</Text>
+            <TouchableOpacity onPress={() => removeHabit(h)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.6}>
+              <Text style={styles.removeTxt}>✕</Text>
             </TouchableOpacity>
           </View>
         ))}
       </Card>
 
-      {/* Data Management */}
+      {/* ── DATA MANAGEMENT ──────────────────────────────────── */}
       <Card title="Data Management" accentColor={Colors.orange}>
         <Text style={styles.dataHint}>
-          Export your data as JSON for backup. Keep this safe — it's the only copy!
+          Export your data as JSON for backup. Keep this safe — it's the only copy.
         </Text>
-        <View style={styles.dataButtons}>
-          <Button title="📤  Export Data" variant="outline" color={Colors.orange} style={{ flex: 1 }} onPress={exportData} />
+        <View style={styles.btnRow}>
+          <Button title="📤  Export" variant="outline" color={Colors.orange} style={{ flex: 1 }} onPress={exportData} />
           <Button title="📥  Import" variant="outline" color={Colors.accentLight} style={{ flex: 1 }} onPress={importData} />
         </View>
         <View style={{ marginTop: 10 }}>
@@ -298,12 +322,12 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
-      {/* About */}
+      {/* ── ABOUT ────────────────────────────────────────────── */}
       <Card title="About LifeOS" accentColor={Colors.purple}>
         <View style={styles.aboutRow}>
-          <Text style={{ fontSize: 36 }}>⚡</Text>
+          <IconTile emoji="⚡" color={Colors.purple} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.aboutVersion}>LifeOS  ·  v1.0.0</Text>
+            <Text style={styles.aboutVersion}>LifeOS  ·  v1.2 (redesign)</Text>
             <Text style={styles.aboutDesc}>
               Your personal life operating system. All data is stored locally on your device — nothing leaves your phone.
             </Text>
@@ -312,12 +336,12 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
-      {/* Goals Modal */}
+      {/* ── MODALS ───────────────────────────────────────────── */}
       <ModalSheet visible={goalModal} onClose={() => setGoalModal(false)} title="Edit Weekly Goals" accentColor={Colors.green}>
         {GOAL_FIELDS.map(g => (
           <FormField
             key={g.key}
-            label={g.label}
+            label={`${g.icon}  ${g.label}`}
             value={goalEdits[g.key] || ''}
             onChangeText={v => setGoalEdits(p => ({ ...p, [g.key]: v }))}
             keyboardType="decimal-pad"
@@ -330,7 +354,6 @@ export default function SettingsScreen() {
         </View>
       </ModalSheet>
 
-      {/* Add Habit Modal */}
       <ModalSheet visible={habitModal} onClose={() => setHabitModal(false)} title="Add Habit" accentColor={Colors.cyan}>
         <FormField label="Habit Name" value={newHabit} onChangeText={setNewHabit} placeholder="e.g. Meditation, Cold Shower..." />
         <View style={styles.modalBtns}>
@@ -339,12 +362,11 @@ export default function SettingsScreen() {
         </View>
       </ModalSheet>
 
-      {/* Notification Settings Modal */}
       <ModalSheet visible={notifModal} onClose={() => setNotifModal(false)} title="Reminder Times" accentColor={Colors.accentLight}>
         {REMINDER_FIELDS.map(f => (
           <TimeField
             key={f.key}
-            label={f.label}
+            label={`${f.icon}  ${f.label}`}
             value={notifEdits[f.key] || f.fallback}
             onChange={v => setNotifEdits(p => ({ ...p, [f.key]: v }))}
             accentColor={Colors.accentLight}
@@ -363,30 +385,67 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4, marginBottom: 12 },
-  settingTextCol: { flex: 1, marginRight: 12 },
-  settingLabel: { color: Colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.3 },
-  settingDesc: { color: Colors.textMuted, fontSize: 10, fontWeight: '600', marginTop: 3, letterSpacing: 0.3 },
-  alarmsNavRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14,
-    padding: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
+
+  greet: { paddingHorizontal: 2, paddingTop: 6, paddingBottom: 14 },
+  greetDay: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  greetHi: { color: Colors.text, fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginTop: 5 },
+
+  // Shared setting row — tinted top hairline for quiet inner-highlight depth.
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderTopColor: Colors.innerHighlight,
   },
-  alarmsNavIcon: { fontSize: 22 },
-  alarmsNavLabel: { color: Colors.text, fontSize: 14, fontWeight: '700' },
-  alarmsNavDesc: { color: Colors.textMuted, fontSize: 10, marginTop: 2 },
-  btnRow: { flexDirection: 'row', gap: 10 },
-  goalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6 },
-  goalLabel: { color: Colors.textSecondary, fontSize: 13 },
-  goalVal: { fontSize: 16, fontWeight: '800' },
-  habitRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6, gap: 10 },
-  habitDot: { width: 8, height: 8, borderRadius: 4 },
-  habitText: { color: Colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  rowFirst: { marginTop: 0 },
+  rowText: { flex: 1 },
+  rowLabel: { color: Colors.text, fontSize: 14, fontWeight: '600', letterSpacing: -0.2 },
+  rowLabelFlex: { flex: 1 },
+  rowDesc: { color: Colors.textMuted, fontSize: 11, fontWeight: '600', marginTop: 3, letterSpacing: 0.2 },
+  chevron: { color: Colors.textMuted, fontSize: 20, fontWeight: '600' },
+
+  tile: {
+    width: 36, height: 36, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+  },
+  tileEmoji: { fontSize: 17 },
+
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+
+  valPill: {
+    minWidth: 48, alignItems: 'center',
+    borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5,
+    borderWidth: 1,
+  },
+  valTxt: { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
+
+  habitDotWrap: {
+    width: 36, height: 36, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
+  },
+  habitDot: { width: 9, height: 9, borderRadius: 5 },
+  removeBtn: {
+    width: 28, height: 28, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.surfaceHigh, borderWidth: 1, borderColor: Colors.border,
+  },
+  removeTxt: { color: Colors.red, fontSize: 12, fontWeight: '700' },
+  emptyText: { color: Colors.textMuted, fontSize: 13, fontWeight: '500', paddingVertical: 6 },
+
   dataHint: { color: Colors.textSecondary, fontSize: 12, marginBottom: 14, lineHeight: 18 },
-  dataButtons: { flexDirection: 'row', gap: 10 },
+
   aboutRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   aboutVersion: { color: Colors.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.3, marginBottom: 8 },
   aboutDesc: { color: Colors.textSecondary, fontSize: 13, lineHeight: 20, marginBottom: 8 },
   aboutTech: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
+
   modalBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10, marginBottom: 20 },
 });

@@ -1,23 +1,24 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
-import { TODAY, addDays, getDayKey, getWeekStart, formatTime12, timeToMin, NOW_MINUTES } from '../../src/utils/helpers';
+import { Colors, CATEGORY_COLORS, DEFAULT_HABITS, DEFAULT_GOALS, TAB_COLORS, TAB_PALETTE, radius } from '../../src/constants/theme';
+import { TODAY, addDays, getDayKey, getWeekStart, NOW_MINUTES, formatDayLine } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { getBacklogItems, getWeeklyAggregates, WeeklyStats } from '../../src/utils/aggregates';
 import { Card } from '../../src/components/Card';
-import { ProgressBar } from '../../src/components/ProgressBar';
+import { RingStack } from '../../src/components/RingStack';
+import { TodayHero, HeroMetric } from '../../src/components/TodayHero';
+import { DayTimeline } from '../../src/components/DayTimeline';
 
 const C = TAB_COLORS.index;
 const P = TAB_PALETTE.index;
 
 const MOODS = [
-  { level: 1, emoji: '😞', label: 'Rough', color: Colors.red },
-  { level: 2, emoji: '😕', label: 'Low', color: Colors.orange },
-  { level: 3, emoji: '😐', label: 'Okay', color: Colors.yellow },
-  { level: 4, emoji: '🙂', label: 'Good', color: Colors.green },
-  { level: 5, emoji: '😄', label: 'Great', color: Colors.cyan },
+  { level: 1, emoji: '😞', label: 'Rough', color: Colors.ramp1 },
+  { level: 2, emoji: '😕', label: 'Low', color: Colors.ramp2 },
+  { level: 3, emoji: '😐', label: 'Okay', color: Colors.ramp3 },
+  { level: 4, emoji: '🙂', label: 'Good', color: Colors.ramp4 },
+  { level: 5, emoji: '😄', label: 'Great', color: Colors.ramp5 },
 ];
 
 const SHORTCUTS = [
@@ -28,27 +29,17 @@ const SHORTCUTS = [
 ];
 
 const pctOf = (v: number, goal: number) => (goal > 0 ? Math.min(100, (v / goal) * 100) : 0);
+const fmtMove = (m: number) => (m < 60 ? `${m}m` : `${Math.floor(m / 60)}h${m % 60 ? ' ' + (m % 60) + 'm' : ''}`);
+const fmtFocus = (h: number) => (Number.isInteger(h) ? `${h}h` : `${h.toFixed(1)}h`);
 
-// A compact circular progress ring (weekly goal at a glance)
-function GoalRing({ pct, color, label }: { pct: number; color: string; label: string }) {
-  const size = 58, stroke = 5, r = (size - stroke) / 2, circ = 2 * Math.PI * r;
-  const dash = circ * (pct / 100);
+// Compact weekly-goal ring (single RingStack + label) — replaces the old GoalRing.
+function WeekRing({ pct, color, label }: { pct: number; color: string; label: string }) {
   return (
-    <View style={styles.ring}>
-      <View style={{ width: size, height: size }}>
-        <Svg width={size} height={size}>
-          <Circle cx={size / 2} cy={size / 2} r={r} stroke={Colors.surfaceHighest} strokeWidth={stroke} fill="none" />
-          <Circle
-            cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
-            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        </Svg>
-        <View style={styles.ringCenter}>
-          <Text style={styles.ringPct}>{Math.round(pct)}%</Text>
-        </View>
-      </View>
-      <Text style={styles.ringLabel}>{label}</Text>
+    <View style={styles.weekRing}>
+      <RingStack size={58} width={5} rings={[{ pct, color }]}>
+        <Text style={styles.weekRingPct}>{Math.round(pct)}%</Text>
+      </RingStack>
+      <Text style={styles.weekRingLabel}>{label}</Text>
     </View>
   );
 }
@@ -57,7 +48,6 @@ export default function DashboardScreen() {
   const router = useRouter();
 
   const [greeting, setGreeting] = useState('');
-  const [streak, setStreak] = useState(0);
   const [habits, setHabits] = useState<string[]>([]);
   const [habitData, setHabitData] = useState<Record<string, boolean>>({});
   const [water, setWater] = useState(0);
@@ -70,6 +60,8 @@ export default function DashboardScreen() {
   const [weekly, setWeekly] = useState<WeeklyStats | null>(null);
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [mood, setMood] = useState<number | undefined>(undefined);
+  const [moveMin, setMoveMin] = useState(0);
+  const [focusHours, setFocusHours] = useState(0);
 
   const loadData = useCallback(async () => {
     const h = new Date().getHours();
@@ -83,7 +75,6 @@ export default function DashboardScreen() {
       await setData('lastActiveDate', TODAY());
       await setData('currentStreak', s);
     }
-    setStreak(Math.max(1, s));
 
     const dayKey = getDayKey(TODAY());
     const t = await getData<any[]>('schedule_' + dayKey, []);
@@ -107,9 +98,18 @@ export default function DashboardScreen() {
       setCigTimer(`${Math.floor(mins / 60)}h ${mins % 60}m ago`);
     } else { setCigTimer(''); }
 
-    const bl = await getBacklogItems();
-    setBacklog(bl.slice(0, 5));
+    // Today's Move (activity) + Focus (study/skill) for the hero mini-metrics
+    const act = await getData<any>('activityLog_' + TODAY(), {});
+    setMoveMin(Math.round(((act.gymHours || 0) + (act.walkHours || 0) + (act.swimHours || 0)) * 60));
+    const studyLogs = await getData<any[]>('studyLogs', []);
+    const skillLogs = await getData<any[]>('skillLogs', []);
+    setFocusHours(
+      [...studyLogs, ...skillLogs]
+        .filter(l => l.date === TODAY())
+        .reduce((sum, l) => sum + (l.hours || 0), 0)
+    );
 
+    setBacklog((await getBacklogItems()).slice(0, 5));
     setGoals(await getData('goals', DEFAULT_GOALS));
     setWeekly(await getWeeklyAggregates(getWeekStart(TODAY())));
     const je = await getData<{ mood?: number }>('journal_' + TODAY(), {});
@@ -171,7 +171,21 @@ export default function DashboardScreen() {
   const habitPct = habits.length ? Math.round((habitDone / habits.length) * 100) : 0;
   const doneTasks = tasks.filter(t => completion[t.id]).length;
   const schedPct = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
-  const greetEmoji = greeting.includes('morning') ? '🌅' : greeting.includes('afternoon') ? '☀️' : '🌙';
+
+  const moveGoalMin = ((goals.weeklyWalkHours + goals.weeklyGymHours) / 7) * 60 || 60;
+  const focusGoalHrs = goals.weeklyStudyHours / 7 || 2;
+  const moveBar = pctOf(moveMin, moveGoalMin);
+  const focusBar = pctOf(focusHours, focusGoalHrs);
+  const overallPct = Math.round((habitPct + schedPct + moveBar + focusBar) / 4);
+
+  const metrics: HeroMetric[] = [
+    { label: 'Habits', value: `${habitDone}/${habits.length}`, barPct: habitPct, color: Colors.accent },
+    { label: 'Schedule', value: `${doneTasks}/${tasks.length}`, barPct: schedPct, color: Colors.green },
+    { label: 'Move', value: fmtMove(moveMin), barPct: moveBar, color: Colors.teal },
+    { label: 'Focus', value: fmtFocus(focusHours), barPct: focusBar, color: Colors.orange },
+  ];
+
+  const timelineItems = tasks.map(t => ({ ...t, done: !!completion[t.id] }));
 
   return (
     <ScrollView
@@ -179,100 +193,57 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── GREETING BANNER ──────────────────────────────────── */}
-      <View style={[styles.banner, { borderTopColor: C, borderTopWidth: 2, borderColor: Colors.border, borderWidth: 1, borderRadius: 22 }]}>
-        <View style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, borderRadius: 70, backgroundColor: C + '0e', pointerEvents: 'none' }} />
-        <View style={styles.bannerTop}>
-          <View>
-            <Text style={styles.bannerEmoji}>{greetEmoji}</Text>
-            <Text style={styles.bannerGreeting}>{greeting}</Text>
-            <Text style={styles.bannerSub}>Let's make today count</Text>
-          </View>
-          <View style={[styles.streakBadge, { borderColor: P.border, backgroundColor: P.bg }]}>
-            <Text style={styles.streakFire}>🔥</Text>
-            <Text style={[styles.streakNum, { color: C }]}>{streak}</Text>
-            <Text style={[styles.streakLabel, { color: P.text }]}>day streak</Text>
-          </View>
-        </View>
-
-        {/* Habit + Task progress bars */}
-        <View style={styles.progressSection}>
-          <View style={styles.progressRow}>
-            <Text style={styles.progressLabel}>Habits</Text>
-            <Text style={[styles.progressPct, { color: P.text }]}>{habitDone}/{habits.length}</Text>
-          </View>
-          <ProgressBar progress={habitPct} color={P.text} height={4} />
-          <View style={[styles.progressRow, { marginTop: 10 }]}>
-            <Text style={styles.progressLabel}>Schedule</Text>
-            <Text style={[styles.progressPct, { color: C }]}>{doneTasks}/{tasks.length}</Text>
-          </View>
-          <ProgressBar progress={schedPct} color={C} height={4} />
-        </View>
+      {/* ── GREETING ─────────────────────────────────────────── */}
+      <View style={styles.greet}>
+        <Text style={styles.greetDay}>{formatDayLine()}</Text>
+        <Text style={styles.greetHi}>{greeting}</Text>
       </View>
 
-      {/* ── TODAY'S SCHEDULE ─────────────────────────────────── */}
-      <Card title="Today's Schedule" badge={`${schedPct}%`} badgeColor={C} accentColor={C}>
-        {tasks.length === 0 ? (
-          <Text style={styles.emptyText}>No tasks — set up your schedule in the Tasks tab</Text>
-        ) : tasks.map(t => {
-          const sMin = timeToMin(t.start), eMin = timeToMin(t.end);
-          const done = !!completion[t.id];
-          const isActive = nowMin >= sMin && nowMin < eMin && !done;
-          const taskColor = CATEGORY_COLORS[t.category] || C;
-          return (
-            <TouchableOpacity
-              key={t.id}
-              style={[styles.taskRow, isActive && { backgroundColor: taskColor + '15', borderRadius: 12 }, done && styles.taskRowDone]}
-              onPress={() => toggleTask(t.id)}
-            >
-              <View style={[styles.taskDot, { backgroundColor: done ? Colors.surfaceHighest : taskColor }]} />
-              <View style={styles.taskInfo}>
-                <Text style={[styles.taskName, done && styles.taskNameDone]}>{t.name}</Text>
-                <Text style={styles.taskTime}>{formatTime12(t.start)} – {formatTime12(t.end)}</Text>
-              </View>
-              {isActive && (
-                <View style={[styles.nowBadge, { backgroundColor: taskColor + '25', borderColor: taskColor + '60' }]}>
-                  <Text style={[styles.nowBadgeTxt, { color: taskColor }]}>NOW</Text>
-                </View>
-              )}
-              {done && <Text style={[styles.doneMark, { color: Colors.green }]}>✓</Text>}
-            </TouchableOpacity>
-          );
-        })}
+      {/* ── TODAY AT A GLANCE (hero) ─────────────────────────── */}
+      <TodayHero
+        overallPct={overallPct}
+        ringOuterPct={schedPct}
+        ringInnerPct={habitPct}
+        centerValue={`${doneTasks}`}
+        centerSub={`of ${tasks.length}`}
+        metrics={metrics}
+      />
+
+      {/* ── TODAY'S RHYTHM (timeline) ────────────────────────── */}
+      <Card title="Today's rhythm" accentColor={C}>
+        <DayTimeline items={timelineItems} nowMin={nowMin} accent={C} onToggle={toggleTask} />
       </Card>
 
-      {/* ── QUICK TRACKING ───────────────────────────────────── */}
-      <Card title="Quick Tracking" accentColor={C}>
-        <View style={styles.trackerGrid}>
-          <View style={[styles.trackerBox, { borderColor: P.border, backgroundColor: P.bg }]}>
-            <Text style={styles.trackerBoxIcon}>💧</Text>
-            <Text style={[styles.trackerBoxVal, { color: C }]}>{water}</Text>
-            <Text style={styles.trackerBoxLabel}>glasses</Text>
-            <View style={styles.trackerBtns}>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.surface }]} onPress={() => adjustWater(-1)}>
-                <Text style={styles.trackerBtnTxt}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: P.bgMid }]} onPress={() => adjustWater(1)}>
-                <Text style={[styles.trackerBtnTxt, { color: C }]}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={[styles.trackerBox, { borderColor: cigs > 0 ? Colors.red + '40' : P.border, backgroundColor: cigs > 0 ? Colors.redBg : P.bg }]}>
-            <Text style={styles.trackerBoxIcon}>🚬</Text>
-            <Text style={[styles.trackerBoxVal, { color: cigs > 0 ? Colors.red : P.text }]}>{cigs}</Text>
-            <Text style={styles.trackerBoxLabel}>{cigTimer || 'clean today'}</Text>
-            <View style={styles.trackerBtns}>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.surface }]} onPress={() => adjustCigs(-1)}>
-                <Text style={styles.trackerBtnTxt}>−</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.trackerBtn, { backgroundColor: Colors.red + '25' }]} onPress={() => adjustCigs(1)}>
-                <Text style={[styles.trackerBtnTxt, { color: Colors.red }]}>+</Text>
-              </TouchableOpacity>
-            </View>
+      {/* ── QUICK LOG TILES ──────────────────────────────────── */}
+      <View style={styles.qlRow}>
+        <View style={styles.qcard}>
+          <Text style={styles.qIcon}>💧</Text>
+          <Text style={styles.qVal}>{water}</Text>
+          <Text style={styles.qKey}>glasses</Text>
+          <View style={styles.step}>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustWater(-1)}>
+              <Text style={styles.stepTxt}>−</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.stepBtn, styles.stepPlus]} onPress={() => adjustWater(1)}>
+              <Text style={[styles.stepTxt, { color: Colors.accentLight }]}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Card>
+
+        <View style={styles.qcard}>
+          <Text style={styles.qIcon}>🚭</Text>
+          <Text style={[styles.qVal, cigs > 0 && { color: Colors.red }]}>{cigs}</Text>
+          <Text style={styles.qKey}>{cigTimer || 'clean today'}</Text>
+          <View style={styles.step}>
+            <TouchableOpacity style={styles.stepBtn} onPress={() => adjustCigs(-1)}>
+              <Text style={styles.stepTxt}>−</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.stepBtn, styles.stepRed]} onPress={() => adjustCigs(1)}>
+              <Text style={[styles.stepTxt, { color: Colors.red }]}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
       {/* ── TODAY'S HABITS ───────────────────────────────────── */}
       {habits.length > 0 && (
@@ -325,10 +296,10 @@ export default function DashboardScreen() {
       {weekly && (
         <Card title="This Week" accentColor={C}>
           <View style={styles.ringRow}>
-            <GoalRing label="Gym" color={Colors.green} pct={pctOf(weekly.gymCount, goals.weeklyGym)} />
-            <GoalRing label="Study" color={Colors.orange} pct={pctOf(weekly.studyHours, goals.weeklyStudyHours)} />
-            <GoalRing label="Water" color={Colors.cyan} pct={pctOf(weekly.totalWater, goals.weeklyWater)} />
-            <GoalRing label="Sleep" color={Colors.purple} pct={pctOf(weekly.avgSleep, goals.weeklySleepAvg)} />
+            <WeekRing label="Gym" color={Colors.green} pct={pctOf(weekly.gymCount, goals.weeklyGym)} />
+            <WeekRing label="Study" color={Colors.orange} pct={pctOf(weekly.studyHours, goals.weeklyStudyHours)} />
+            <WeekRing label="Water" color={Colors.cyan} pct={pctOf(weekly.totalWater, goals.weeklyWater)} />
+            <WeekRing label="Sleep" color={Colors.purple} pct={pctOf(weekly.avgSleep, goals.weeklySleepAvg)} />
           </View>
         </Card>
       )}
@@ -374,74 +345,43 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
 
-  banner: { backgroundColor: Colors.card, padding: 20, marginBottom: 12, overflow: 'hidden' },
-  bannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  bannerEmoji: { fontSize: 28, marginBottom: 6 },
-  bannerGreeting: { color: Colors.text, fontSize: 27, fontWeight: '800', letterSpacing: -0.5 },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 3 },
-  streakBadge: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, alignItems: 'center' },
-  streakFire: { fontSize: 18 },
-  streakNum: { fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  streakLabel: { fontSize: 9, fontWeight: '600', letterSpacing: 0.5 },
-  progressSection: { gap: 4 },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  progressLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
-  progressPct: { fontSize: 11, fontWeight: '800' },
+  greet: { paddingHorizontal: 2, paddingTop: 6, paddingBottom: 14 },
+  greetDay: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  greetHi: { color: Colors.text, fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginTop: 5 },
 
-  emptyText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 16 },
-  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, gap: 12, marginBottom: 2 },
-  taskRowDone: { opacity: 0.4 },
-  taskDot: { width: 4, height: 38, borderRadius: 2 },
-  taskInfo: { flex: 1 },
-  taskName: { color: Colors.text, fontSize: 14, fontWeight: '700' },
-  taskNameDone: { textDecorationLine: 'line-through', color: Colors.textMuted },
-  taskTime: { color: Colors.textMuted, fontSize: 10, marginTop: 2, letterSpacing: 0.3 },
-  nowBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-  nowBadgeTxt: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  doneMark: { fontSize: 16, fontWeight: '700' },
-
-  trackerGrid: { flexDirection: 'row', gap: 10 },
-  trackerBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 18, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  trackerBoxIcon: { fontSize: 24, marginBottom: 6 },
-  trackerBoxVal: { fontSize: 28, fontWeight: '800', lineHeight: 32 },
-  trackerBoxLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '600', marginTop: 3, marginBottom: 10, textAlign: 'center' },
-  trackerBtns: { flexDirection: 'row', gap: 6 },
-  trackerBtn: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 10 },
-  trackerBtnTxt: { color: Colors.textSecondary, fontSize: 15, fontWeight: '800' },
+  qlRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  qcard: { flex: 1, backgroundColor: Colors.surface, borderColor: Colors.border, borderWidth: 1, borderRadius: radius.md, padding: 13, alignItems: 'center' },
+  qIcon: { fontSize: 19 },
+  qVal: { color: Colors.text, fontSize: 23, fontWeight: '800', marginTop: 4, marginBottom: 1 },
+  qKey: { color: Colors.textMuted, fontSize: 10.5, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, textAlign: 'center' },
+  step: { flexDirection: 'row', gap: 8, marginTop: 9 },
+  stepBtn: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surfaceHigh, borderWidth: 1, borderColor: Colors.border },
+  stepPlus: { backgroundColor: P.bgMid, borderColor: P.border },
+  stepRed: { backgroundColor: Colors.red + '25', borderColor: Colors.red + '48' },
+  stepTxt: { color: Colors.textSecondary, fontSize: 17, fontWeight: '600' },
 
   habitsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  habitChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
+  habitChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: radius.sm, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   habitChipTxt: { fontSize: 11, fontWeight: '600' },
 
-  ring: { alignItems: 'center', flex: 1 },
+  weekRing: { alignItems: 'center', flex: 1 },
+  weekRingPct: { color: Colors.text, fontSize: 12, fontWeight: '800' },
+  weekRingLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
   ringRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  ringCenter: { position: 'absolute', width: 58, height: 58, alignItems: 'center', justifyContent: 'center' },
-  ringPct: { color: Colors.text, fontSize: 12, fontWeight: '800' },
-  ringLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
 
   moodRow: { flexDirection: 'row', gap: 8 },
-  moodBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 14, borderWidth: 1, backgroundColor: Colors.surface, gap: 3 },
+  moodBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, backgroundColor: Colors.surface, gap: 3 },
   moodEmoji: { fontSize: 22 },
   moodLbl: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
 
   shortcutRow: { flexDirection: 'row', gap: 8 },
-  shortcut: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1, backgroundColor: Colors.surface, gap: 5 },
+  shortcut: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, backgroundColor: Colors.surface, gap: 5 },
   shortcutIcon: { fontSize: 20 },
   shortcutLbl: { color: Colors.textSecondary, fontSize: 10, fontWeight: '700' },
 
-  backlogItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 6 },
+  backlogItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, backgroundColor: Colors.surface, borderRadius: radius.sm, paddingHorizontal: 12, marginBottom: 6 },
   backlogDot: { width: 8, height: 8, borderRadius: 4 },
   backlogName: { color: Colors.text, fontSize: 13, fontWeight: '600' },
   backlogDate: { color: Colors.textMuted, fontSize: 10, marginTop: 1 },
-  backlogCat: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  backlogCat: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.textMuted },
 });

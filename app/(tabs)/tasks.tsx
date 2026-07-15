@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Colors, DEFAULT_HABITS, CATEGORY_COLORS, TAB_COLORS, TAB_PALETTE } from '../../src/constants/theme';
+import { Colors, DEFAULT_HABITS, CATEGORY_COLORS, TAB_COLORS, TAB_PALETTE, radius } from '../../src/constants/theme';
 import { TODAY, getDayKey, formatTime12, timeToMin, NOW_MINUTES, uid, addDays } from '../../src/utils/helpers';
 import { getData, setData } from '../../src/utils/storage';
 import { getBacklogItems } from '../../src/utils/aggregates';
@@ -11,7 +11,7 @@ import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 import { TimeField } from '../../src/components/TimeField';
 
-const C = TAB_COLORS.tasks; // blue
+const C = TAB_COLORS.tasks; // muted blue
 const P = TAB_PALETTE.tasks;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -19,6 +19,19 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 type ScheduleTask = { id: string; name: string; start: string; end: string; category: string };
 type ManualTask = { id: string; name: string; done: boolean; createdAt: string };
 type BacklogItem = { date: string; taskId: string; name: string; category: string; start: string; end: string };
+
+// Small uppercase section label with a 3px accent bar (redesign v1 §.sect).
+function SectionHeader({ label, right }: { label: string; right?: React.ReactNode }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionTitleRow}>
+        <View style={styles.sectionBar} />
+        <Text style={styles.sectionTitle}>{label}</Text>
+      </View>
+      {right}
+    </View>
+  );
+}
 
 export default function TasksScreen() {
   // Habits
@@ -182,9 +195,12 @@ export default function TasksScreen() {
   const nowMin = NOW_MINUTES();
   const skipSet = new Set(skipped);
   const habitDone = habits.filter(h => habitData[h]).length;
+  const habitPct = habits.length ? Math.round((habitDone / habits.length) * 100) : 0;
   const activeSched = scheduleTasks.filter(t => !skipSet.has(t.id)); // skipped tasks don't count today
   const schedDone = activeSched.filter(t => completion[t.id]).length;
   const manualDone = manualTasks.filter(t => t.done).length;
+  const totalDone = schedDone + manualDone;
+  const totalCount = activeSched.length + manualTasks.length;
   const categories = ['fitness', 'work', 'learning', 'personal', 'meal', 'sleep', 'date', 'skill'];
 
   return (
@@ -193,36 +209,41 @@ export default function TasksScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C} />}
     >
-      {/* ── HEADER ───────────────────────────────────────────── */}
+      {/* Header */}
       <View style={styles.todayHeader}>
         <View>
           <Text style={styles.todayDay}>{dayName}</Text>
           <Text style={styles.todayDate}>{fullDate}</Text>
         </View>
-        <View style={[styles.progressBadge, { borderColor: C + '50', backgroundColor: C + '12' }]}>
-          <Text style={[styles.progressNum, { color: C }]}>{schedDone + manualDone}/{activeSched.length + manualTasks.length}</Text>
-          <Text style={styles.progressLabel}>tasks</Text>
+        <View style={styles.progressBadge}>
+          <Text style={styles.progressNum}>{totalDone}<Text style={styles.progressDen}>/{totalCount}</Text></Text>
+          <Text style={styles.progressLabel}>DONE</Text>
         </View>
       </View>
 
       {/* ── DAILY HABITS ─────────────────────────────────────── */}
       <Card
         title="Daily Habits"
-        badge={`${habitDone}/${habits.length}`}
-        badgeColor={C}
+        badge={habitPct === 100 ? '✓ All done' : `${habitDone}/${habits.length}`}
+        badgeColor={habitPct === 100 ? Colors.green : C}
         accentColor={C}
       >
-        {habits.map(h => {
-          const done = !!habitData[h];
-          return (
-            <TouchableOpacity key={h} style={styles.habitRow} onPress={() => toggleHabit(h)} activeOpacity={0.7}>
-              <View style={[styles.habitCheck, done && { backgroundColor: C, borderColor: C }]}>
-                {done && <Text style={styles.habitCheckMark}>✓</Text>}
-              </View>
-              <Text style={[styles.habitName, done && { color: P.text, textDecorationLine: 'line-through' }]}>{h}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        <View style={styles.habitsGrid}>
+          {habits.map(h => {
+            const done = !!habitData[h];
+            return (
+              <TouchableOpacity
+                key={h}
+                style={[styles.habitChip, done && { borderColor: P.border, backgroundColor: P.bgMid, borderTopColor: Colors.innerHighlight }]}
+                onPress={() => toggleHabit(h)}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 11, color: done ? C : Colors.textMuted, lineHeight: 14 }}>{done ? '✓' : '○'}</Text>
+                <Text style={[styles.habitChipTxt, { color: done ? P.text : Colors.textSecondary }]}>{h}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </Card>
 
       {/* ── BACKLOG / CATCHUP (past 7 days, any day) ─────────── */}
@@ -234,13 +255,13 @@ export default function TasksScreen() {
               <View key={item.date + item.taskId + i} style={styles.catchupItem}>
                 <View style={[styles.catchupDot, { backgroundColor: col }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.catchupName}>{item.name}</Text>
+                  <Text style={styles.catchupName} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.catchupMeta}>{item.date}  ·  {formatTime12(item.start)}–{formatTime12(item.end)}</Text>
                 </View>
-                <TouchableOpacity style={[styles.backlogAction, { borderColor: C + '50' }]} onPress={() => carryBacklog(item)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
-                  <Text style={[styles.backlogActionTxt, { color: C }]}>Carry →</Text>
+                <TouchableOpacity style={[styles.backlogAction, { borderColor: P.border, backgroundColor: P.bg }]} onPress={() => carryBacklog(item)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                  <Text style={[styles.backlogActionTxt, { color: P.text }]}>Carry →</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.backlogAction, { borderColor: Colors.border }]} onPress={() => dismissBacklog(item.date, item.taskId)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+                <TouchableOpacity style={styles.backlogAction} onPress={() => dismissBacklog(item.date, item.taskId)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
                   <Text style={[styles.backlogActionTxt, { color: Colors.textMuted }]}>Dismiss</Text>
                 </TouchableOpacity>
               </View>
@@ -249,68 +270,73 @@ export default function TasksScreen() {
         </Card>
       )}
 
-      {/* ── FIXED DAILY SCHEDULE ─────────────────────────────── */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Fixed Schedule</Text>
-        <Button title="+ Add" size="sm" color={C} onPress={openAddSchedule} />
-      </View>
-
-      {scheduleTasks.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📋</Text>
-          <Text style={styles.emptyText}>No scheduled tasks</Text>
-          <Text style={styles.emptySubtext}>Tap + Add to build your {dayName} routine</Text>
-        </View>
-      ) : scheduleTasks.map(t => {
-        const sMin = timeToMin(t.start), eMin = timeToMin(t.end);
-        const isSkipped = skipSet.has(t.id);
-        const done = !isSkipped && !!completion[t.id];
-        const isActive = nowMin >= sMin && nowMin < eMin && !done && !isSkipped;
-        const col = CATEGORY_COLORS[t.category] || C;
-        return (
-          <TouchableOpacity
-            key={t.id}
-            style={[styles.taskItem, { borderLeftColor: done || isSkipped ? Colors.surfaceHighest : col }, isActive && { backgroundColor: col + '10' }, isSkipped && styles.taskItemSkipped]}
-            onPress={() => { if (!isSkipped) toggleScheduleTask(t.id); }}
-            onLongPress={() => openEditSchedule(t)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.taskCheck, done && { backgroundColor: col, borderColor: col }]}>
-              {done && <Text style={styles.taskCheckMark}>✓</Text>}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.taskName, (done || isSkipped) && styles.taskNameDone]}>{t.name}</Text>
-              <Text style={styles.taskTime}>{formatTime12(t.start)} – {formatTime12(t.end)}</Text>
-            </View>
-            {isActive && (
-              <View style={[styles.nowPill, { backgroundColor: col + '25', borderColor: col + '50' }]}>
-                <Text style={[styles.nowTxt, { color: col }]}>NOW</Text>
+      {/* ── FIXED DAILY SCHEDULE (timeline) ──────────────────── */}
+      <Card
+        title="Fixed Schedule"
+        badge={activeSched.length ? `${schedDone}/${activeSched.length}` : undefined}
+        badgeColor={C}
+        accentColor={C}
+        headerRight={<Button title="+ Add" size="sm" color={C} onPress={openAddSchedule} />}
+      >
+        {scheduleTasks.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🗓️</Text>
+            <Text style={styles.emptyText}>No scheduled tasks</Text>
+            <Text style={styles.emptySubtext}>Tap + Add to build your {dayName} routine</Text>
+          </View>
+        ) : scheduleTasks.map((t, i) => {
+          const sMin = timeToMin(t.start), eMin = timeToMin(t.end);
+          const isSkipped = skipSet.has(t.id);
+          const done = !isSkipped && !!completion[t.id];
+          const isActive = nowMin >= sMin && nowMin < eMin && !done && !isSkipped;
+          const dim = done || isSkipped;
+          const col = CATEGORY_COLORS[t.category] || C;
+          const last = i === scheduleTasks.length - 1;
+          return (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.seg, last && styles.segLast]}
+              onPress={() => { if (!isSkipped) toggleScheduleTask(t.id); }}
+              onLongPress={() => openEditSchedule(t)}
+              activeOpacity={0.75}
+            >
+              {!last && <View style={styles.rail} />}
+              <View style={[styles.dot, { backgroundColor: dim ? Colors.surfaceHighest : col }, isActive && { borderColor: col + '55' }]} />
+              <View style={styles.segBody}>
+                <View style={styles.segNameRow}>
+                  <Text style={[styles.segName, dim && styles.segNameDone]} numberOfLines={1}>{t.name}</Text>
+                  {isActive && (
+                    <View style={styles.nowPill}><Text style={styles.nowTxt}>NOW</Text></View>
+                  )}
+                </View>
+                <View style={styles.segMetaRow}>
+                  <Text style={styles.segTime}>{formatTime12(t.start)} – {formatTime12(t.end)}</Text>
+                  {isSkipped ? (
+                    <View style={[styles.catChip, { backgroundColor: Colors.yellowBg }]}>
+                      <Text style={[styles.catChipTxt, { color: Colors.yellow }]}>skipped</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.catChip, { backgroundColor: col + '18' }]}>
+                      <Text style={[styles.catChipTxt, { color: col }]}>{t.category}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
-            )}
-            {isSkipped ? (
-              <View style={[styles.catChip, { backgroundColor: Colors.yellow + '20' }]}>
-                <Text style={[styles.catChipTxt, { color: Colors.yellow }]}>skipped</Text>
+              <View style={styles.segControls}>
+                <TouchableOpacity onPress={() => toggleSkip(t.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 6 }}>
+                  <Text style={[styles.ctrlIcon, isSkipped && { color: Colors.yellow }]}>{isSkipped ? '↺' : '⤫'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => deleteScheduleTask(t.id, t.name)} hitSlop={{ top: 8, bottom: 8, left: 6, right: 8 }}>
+                  <Text style={styles.ctrlIcon}>✕</Text>
+                </TouchableOpacity>
               </View>
-            ) : (
-              <View style={[styles.catChip, { backgroundColor: col + '20' }]}>
-                <Text style={[styles.catChipTxt, { color: col }]}>{t.category}</Text>
-              </View>
-            )}
-            <TouchableOpacity onPress={() => toggleSkip(t.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 6 }}>
-              <Text style={[styles.skipBtn, isSkipped && { color: Colors.yellow }]}>{isSkipped ? '↺' : '⤫'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => deleteScheduleTask(t.id, t.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ color: Colors.textMuted, fontSize: 14 }}>✕</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        );
-      })}
+          );
+        })}
+      </Card>
 
       {/* ── MANUAL (AD-HOC) TASKS ────────────────────────────── */}
-      <View style={[styles.sectionHeader, { marginTop: 8 }]}>
-        <Text style={styles.sectionTitle}>Today's Tasks</Text>
-        <Text style={styles.sectionBadge}>{manualDone}/{manualTasks.length}</Text>
-      </View>
+      <SectionHeader label="Today's Tasks" right={<Text style={styles.sectionBadge}>{manualDone}/{manualTasks.length}</Text>} />
 
       {/* Quick add row */}
       <View style={styles.addRow}>
@@ -323,7 +349,7 @@ export default function TasksScreen() {
           onSubmitEditing={addManualTask}
           returnKeyType="done"
         />
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: C }]} onPress={addManualTask}>
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: C }]} onPress={addManualTask} activeOpacity={0.8}>
           <Text style={styles.addBtnTxt}>+</Text>
         </TouchableOpacity>
       </View>
@@ -338,7 +364,7 @@ export default function TasksScreen() {
           </View>
           <Text style={[styles.manualName, t.done && { textDecorationLine: 'line-through', color: Colors.textMuted }]}>{t.name}</Text>
           <TouchableOpacity onPress={() => deleteManualTask(t.id)} hitSlop={{ top: 8, bottom: 8, left: 12, right: 8 }}>
-            <Text style={{ color: Colors.textMuted, fontSize: 14 }}>✕</Text>
+            <Text style={styles.ctrlIcon}>✕</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       ))}
@@ -380,65 +406,69 @@ const styles = StyleSheet.create({
 
   todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 2 },
   todayDay: { color: Colors.text, fontSize: 28, fontWeight: '800', letterSpacing: -1 },
-  todayDate: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  progressBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, borderWidth: 1, alignItems: 'center' },
-  progressNum: { fontSize: 20, fontWeight: '800', lineHeight: 24 },
-  progressLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  todayDate: { color: Colors.textMuted, fontSize: 12, fontWeight: '500', marginTop: 3 },
+  progressBadge: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: radius.md, borderWidth: 1, borderColor: P.border, borderTopColor: Colors.innerHighlight, backgroundColor: P.bg, alignItems: 'center' },
+  progressNum: { color: P.text, fontSize: 20, fontWeight: '800', lineHeight: 23 },
+  progressDen: { color: Colors.textMuted, fontSize: 14, fontWeight: '700' },
+  progressLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
 
-  habitRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, gap: 12 },
-  habitCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  habitCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  habitName: { flex: 1, color: Colors.text, fontSize: 14, fontWeight: '600' },
+  // Habit chips (mirrors the Today screen's grid)
+  habitsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  habitChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  habitChipTxt: { fontSize: 12, fontWeight: '600' },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 4 },
-  sectionTitle: { color: Colors.textMuted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' as const, letterSpacing: 0.8 },
+  // Section header — 3px accent bar + uppercase label
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 6, paddingHorizontal: 2 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionBar: { width: 3, height: 13, borderRadius: 2, backgroundColor: C },
+  sectionTitle: { color: Colors.textSecondary, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' as const, letterSpacing: 0.8 },
   sectionBadge: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
 
-  emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyIcon: { fontSize: 36, marginBottom: 10 },
+  emptyState: { alignItems: 'center', paddingVertical: 28 },
+  emptyIcon: { fontSize: 32, marginBottom: 10 },
   emptyText: { color: Colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
   emptySubtext: { color: Colors.textMuted, fontSize: 12, textAlign: 'center' },
   emptyInline: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 16 },
 
-  taskItem: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.card, borderRadius: 16,
-    padding: 14, marginBottom: 8, gap: 12, borderLeftWidth: 3,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  taskItemSkipped: { opacity: 0.5 },
-  skipBtn: { color: Colors.textMuted, fontSize: 15, fontWeight: '700' },
-  taskCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  taskCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  taskName: { color: Colors.text, fontSize: 14, fontWeight: '700' },
-  taskNameDone: { textDecorationLine: 'line-through' as const, color: Colors.textMuted },
-  taskTime: { color: Colors.textMuted, fontSize: 11, marginTop: 3 },
-  nowPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-  nowTxt: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  catChip: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 9 },
+  // Schedule timeline segments (DayTimeline-adjacent)
+  seg: { flexDirection: 'row', gap: 12, position: 'relative', paddingBottom: 15, alignItems: 'flex-start' },
+  segLast: { paddingBottom: 2 },
+  rail: { position: 'absolute', left: 5, top: 16, bottom: -2, width: 1.5, backgroundColor: Colors.borderHover },
+  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 3, borderWidth: 2.5, borderColor: Colors.card, zIndex: 1 },
+  segBody: { flex: 1, minWidth: 0 },
+  segNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  segName: { color: Colors.text, fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  segNameDone: { color: Colors.textMuted, textDecorationLine: 'line-through' as const },
+  segMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  segTime: { color: Colors.textMuted, fontSize: 11.5, fontWeight: '500' },
+  nowPill: { backgroundColor: Colors.accentChipBg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  nowTxt: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.5, color: Colors.accentLight },
+  catChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
   catChipTxt: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  segControls: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 2 },
+  ctrlIcon: { color: Colors.textMuted, fontSize: 14, fontWeight: '700' },
 
-  catchupItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 12, marginBottom: 6, borderWidth: 1, borderColor: Colors.border },
+  // Backlog tiles
+  catchupItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, backgroundColor: Colors.surface, borderRadius: radius.md, paddingHorizontal: 12, marginBottom: 7, borderWidth: 1, borderColor: Colors.border, borderTopColor: Colors.innerHighlight },
   catchupDot: { width: 8, height: 8, borderRadius: 4 },
   catchupName: { color: Colors.text, fontSize: 13, fontWeight: '600' },
   catchupMeta: { color: Colors.textMuted, fontSize: 10, marginTop: 2 },
-  backlogAction: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  backlogAction: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm, borderWidth: 1, borderColor: Colors.border },
   backlogActionTxt: { fontSize: 10, fontWeight: '700' },
 
+  // Manual tasks
   addRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  addInput: { flex: 1, backgroundColor: Colors.card, borderRadius: 14, color: Colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  addBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  addInput: { flex: 1, backgroundColor: Colors.card, borderRadius: radius.md, color: Colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, borderColor: Colors.border, borderTopColor: Colors.innerHighlight },
+  addBtn: { width: 46, height: 46, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   addBtnTxt: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
-
-  manualItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.card, borderRadius: 14, padding: 14,
-    marginBottom: 8, borderWidth: 1, borderColor: Colors.border,
-  },
+  manualItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.card, borderRadius: radius.md, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: Colors.border, borderTopColor: Colors.innerHighlight },
   manualName: { flex: 1, color: Colors.text, fontSize: 14, fontWeight: '600' },
+  taskCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  taskCheckMark: { color: '#fff', fontSize: 12, fontWeight: '800' },
 
+  // Category picker (modal)
   catGrid: { flexDirection: 'row', flexWrap: 'wrap' as const, gap: 8 },
-  catBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceHigh },
+  catBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceHigh },
   catBtnTxt: { fontSize: 12, fontWeight: '600' },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10, marginBottom: 20 },
 });

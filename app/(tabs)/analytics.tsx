@@ -1,26 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { LineChart } from 'react-native-chart-kit';
-import { Colors, DEFAULT_HABITS, TAB_COLORS } from '../../src/constants/theme';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { Colors, DEFAULT_HABITS, TAB_COLORS, heroGradient, radius } from '../../src/constants/theme';
 import { TODAY, getDayKey } from '../../src/utils/helpers';
 import { getData } from '../../src/utils/storage';
 import { Card } from '../../src/components/Card';
+import { AreaChart } from '../../src/components/AreaChart';
+import { RingStack } from '../../src/components/RingStack';
+import { ProgressBar } from '../../src/components/ProgressBar';
 
 const C = TAB_COLORS.analytics; // purple
-const SW = Dimensions.get('window').width - 48;
+const CHART_W = Dimensions.get('window').width - 60; // window − container(14·2) − card(16·2)
 
-function makeChartCfg(hex: string) {
-  return {
-    backgroundGradientFrom: Colors.surface,
-    backgroundGradientTo: Colors.surface,
-    color: (op = 1) => { const m = hex.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? `rgba(${m[1]},${m[2]},${m[3]},${op})` : hex; },
-    labelColor: () => Colors.textMuted,
-    decimalPlaces: 1,
-    propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.04)' },
-    propsForLabels: { fontSize: 9 },
-  };
-}
+const pct = (n: number, d: number) => (d > 0 ? Math.min(100, Math.round((n / d) * 100)) : 0);
+const dLabel = (ds: string) => new Date(ds + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 function getDaysOfMonth(y: number, m: number): string[] {
   const days: string[] = [];
@@ -34,6 +28,104 @@ type DayData = {
   studyH: number; skillH: number; cigs: number; water: number;
   gym: boolean;
 };
+
+type Metric = { label: string; value: string; barPct: number; color: string };
+
+// ── Month hero — headline habit ring + rate mini-metrics (mimics TodayHero). ──
+function MonthHero({ label, loading, onPrev, onNext, avg, metrics }: {
+  label: string; loading: boolean; onPrev: () => void; onNext: () => void; avg: number; metrics: Metric[];
+}) {
+  return (
+    <View style={styles.hero}>
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="monthHeroBg" x1="0" y1="0" x2="0.35" y2="1">
+            <Stop offset="0" stopColor={heroGradient.colors[0]} />
+            <Stop offset="1" stopColor={heroGradient.colors[1]} />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#monthHeroBg)" />
+      </Svg>
+      <View style={[styles.heroGlow, { backgroundColor: C }]} pointerEvents="none" />
+      <View style={styles.hairline} />
+
+      <View style={styles.heroHead}>
+        <TouchableOpacity style={styles.navBtn} onPress={onPrev} hitSlop={8}>
+          <Text style={[styles.navArrow, { color: C }]}>‹</Text>
+        </TouchableOpacity>
+        <View style={styles.heroTitleWrap}>
+          <Text style={styles.heroKicker}>Monthly overview</Text>
+          <Text style={styles.heroMonth}>{label}</Text>
+        </View>
+        <TouchableOpacity style={styles.navBtn} onPress={onNext} hitSlop={8}>
+          <Text style={[styles.navArrow, { color: C }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.heroBody}>
+        <RingStack size={92} rings={[{ pct: avg, color: C, width: 8 }]}>
+          {loading
+            ? <ActivityIndicator color={C} size="small" />
+            : <>
+                <Text style={styles.ringVal}>{avg}%</Text>
+                <Text style={styles.ringSub}>habits</Text>
+              </>}
+        </RingStack>
+
+        <View style={styles.heroMetrics}>
+          {metrics.map(m => (
+            <View key={m.label} style={styles.metric}>
+              <Text style={styles.mLabel}>{m.label}</Text>
+              <Text style={styles.mVal}>{m.value}</Text>
+              <View style={styles.mBar}><ProgressBar progress={m.barPct} color={m.color} height={5} /></View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Insight — icon tile + title + rich body line. ──
+function Insight({ icon, bg, title, children }: { icon: string; bg: string; title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.insightRow}>
+      <View style={[styles.insightIconBox, { backgroundColor: bg }]}><Text style={styles.insightEmoji}>{icon}</Text></View>
+      <View style={styles.insightContent}>
+        <Text style={styles.insightTitle}>{title}</Text>
+        <Text style={styles.insightBody}>{children}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Trend — SVG area chart with latest/avg headline + delta pill + date axis. ──
+function Trend({ values, labels, color, unit }: { values: number[]; labels: string[]; color: string; unit: string }) {
+  const latest = values[values.length - 1];
+  const first = values[0];
+  const avg = values.reduce((s, v) => s + v, 0) / values.length;
+  const delta = latest - first;
+  const up = delta >= 0;
+  const dColor = Math.abs(delta) < 0.05 ? Colors.textMuted : up ? Colors.green : Colors.red;
+  return (
+    <View>
+      <View style={styles.trendHead}>
+        <View>
+          <Text style={[styles.trendVal, { color }]}>{latest.toFixed(unit === 'h' ? 1 : 0)}{unit}</Text>
+          <Text style={styles.trendCap}>latest · avg {avg.toFixed(1)}{unit}</Text>
+        </View>
+        <View style={[styles.deltaPill, { backgroundColor: dColor + '18' }]}>
+          <Text style={[styles.deltaTxt, { color: dColor }]}>{up ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}{unit}</Text>
+        </View>
+      </View>
+      <AreaChart data={values} width={CHART_W} height={118} color={color} strokeWidth={2.6} />
+      <View style={styles.trendAxis}>
+        <Text style={styles.axisTxt}>{labels[0]}</Text>
+        <Text style={styles.axisTxt}>{labels[labels.length - 1]}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function AnalyticsScreen() {
   const now = new Date();
@@ -86,13 +178,18 @@ export default function AnalyticsScreen() {
 
   const monthLabel = new Date(year, month, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  const avgHabitPct = dayData.length ? Math.round(dayData.reduce((s, d) => s + d.habitPct, 0) / dayData.length) : 0;
+  const tracked = dayData.length;
+  const avgHabitPct = tracked ? Math.round(dayData.reduce((s, d) => s + d.habitPct, 0) / tracked) : 0;
   const gymDays = dayData.filter(d => d.gym).length;
   const totalStudy = dayData.reduce((s, d) => s + d.studyH, 0);
   const totalSkill = dayData.reduce((s, d) => s + d.skillH, 0);
+  const totalWater = dayData.reduce((s, d) => s + d.water, 0);
   const sleepDays = dayData.filter(d => d.sleepH > 0);
   const avgSleep = sleepDays.length ? sleepDays.reduce((s, d) => s + d.sleepH, 0) / sleepDays.length : 0;
   const totalCigs = dayData.reduce((s, d) => s + d.cigs, 0);
+  const studyDays = dayData.filter(d => d.studyH > 0).length;
+  const skillDays = dayData.filter(d => d.skillH > 0).length;
+  const goodNights = dayData.filter(d => d.sleepH >= 7).length;
 
   const goodSleepDays = dayData.filter(d => d.sleepH >= 7);
   const badSleepDays = dayData.filter(d => d.sleepH > 0 && d.sleepH < 7);
@@ -100,63 +197,58 @@ export default function AnalyticsScreen() {
   const badSleepHabit = badSleepDays.length ? Math.round(badSleepDays.reduce((s, d) => s + d.habitPct, 0) / badSleepDays.length) : null;
   const bestDay = dayData.reduce<DayData | null>((best, d) => d.habitPct > (best?.habitPct || 0) ? d : best, null);
 
+  const heroMetrics: Metric[] = [
+    { label: 'Gym', value: `${gymDays}/${tracked}d`, barPct: pct(gymDays, tracked), color: Colors.green },
+    { label: 'Sleep 7h+', value: `${goodNights}/${sleepDays.length}`, barPct: pct(goodNights, sleepDays.length), color: Colors.purple },
+    { label: 'Study', value: `${totalStudy.toFixed(1)}h`, barPct: pct(studyDays, tracked), color: Colors.orange },
+    { label: 'Skills', value: `${totalSkill.toFixed(1)}h`, barPct: pct(skillDays, tracked), color: Colors.pink },
+  ];
+
+  const statTiles = [
+    { val: `${gymDays}`, label: 'Gym Days', color: Colors.green, icon: '💪' },
+    { val: `${totalStudy.toFixed(1)}h`, label: 'Study', color: Colors.orange, icon: '📚' },
+    { val: `${totalSkill.toFixed(1)}h`, label: 'Skills', color: Colors.pink, icon: '🎸' },
+    { val: `${avgSleep.toFixed(1)}h`, label: 'Avg Sleep', color: Colors.purple, icon: '😴' },
+    { val: `${totalWater}`, label: 'Water', color: Colors.cyan, icon: '💧' },
+    { val: `${totalCigs}`, label: 'Cigarettes', color: Colors.red, icon: '🚬' },
+  ];
+
   const allDays = getDaysOfMonth(year, month);
   const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
   const cells: (string | null)[] = [...Array(firstDow).fill(null), ...allDays];
   while (cells.length % 7 !== 0) cells.push(null);
 
+  // Completion reads as INTENSITY of the one indigo hue (lightness/opacity), not
+  // a red→green rainbow. Empty (0%) is a calm neutral — red is reserved for
+  // genuinely destructive / over-limit states elsewhere.
   const heatBg = (d: DayData | undefined, ds: string) => {
-    if (ds > TODAY()) return Colors.surface;
-    if (!d) return Colors.surfaceHigh;
-    if (d.habitPct === 0) return Colors.redBg;
-    if (d.habitPct < 50) return Colors.orangeBg;
-    if (d.habitPct < 80) return Colors.yellowBg;
-    return Colors.greenBg;
+    if (ds > TODAY()) return Colors.bg;
+    if (!d || d.habitPct === 0) return Colors.surface;
+    if (d.habitPct < 50) return 'rgba(94,106,210,0.10)';
+    if (d.habitPct < 80) return 'rgba(94,106,210,0.20)';
+    return 'rgba(94,106,210,0.34)';
   };
   const heatTc = (d: DayData | undefined, ds: string) => {
-    if (ds > TODAY() || !d) return Colors.textMuted;
-    if (d.habitPct < 50) return Colors.orange;
-    if (d.habitPct < 80) return Colors.yellow;
-    return Colors.green;
+    if (ds > TODAY() || !d || d.habitPct === 0) return Colors.textMuted;
+    if (d.habitPct < 50) return Colors.ramp3;
+    if (d.habitPct < 80) return Colors.ramp4;
+    return Colors.ramp5;
   };
 
   const sleepChart = dayData.filter(d => d.sleepH > 0).slice(-14);
   const habitChart = dayData.slice(-14);
   const wChart = weightLog.filter(w => w.date.slice(0, 7) === `${year}-${String(month + 1).padStart(2, '0')}`);
 
-  const summaryItems = [
-    { val: `${avgHabitPct}%`, label: 'Avg Habits', color: Colors.green, icon: '✅' },
-    { val: `${gymDays}`, label: 'Gym Days', color: Colors.green, icon: '💪' },
-    { val: `${totalStudy.toFixed(1)}h`, label: 'Study', color: Colors.orange, icon: '📚' },
-    { val: `${avgSleep.toFixed(1)}h`, label: 'Avg Sleep', color: Colors.purple, icon: '😴' },
-    { val: `${totalCigs}`, label: 'Cigarettes', color: Colors.red, icon: '🚬' },
-    { val: `${totalSkill.toFixed(1)}h`, label: 'Skills', color: Colors.yellow, icon: '🎸' },
-    { val: `${dayData.length}`, label: 'Days Tracked', color: Colors.textSecondary, icon: '📅' },
-  ];
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Month Nav */}
-      <Card accentColor={C}>
-        <View style={styles.monthNav}>
-          <TouchableOpacity style={styles.navBtn} onPress={prevMonth}>
-            <Text style={[styles.navArrow, { color: C }]}>‹</Text>
-          </TouchableOpacity>
-          <View style={styles.monthCenter}>
-            <Text style={styles.monthLabel}>{monthLabel}</Text>
-            {loading && <ActivityIndicator color={C} size="small" style={{ marginTop: 4 }} />}
-          </View>
-          <TouchableOpacity style={styles.navBtn} onPress={nextMonth}>
-            <Text style={[styles.navArrow, { color: C }]}>›</Text>
-          </TouchableOpacity>
-        </View>
-      </Card>
+      <MonthHero label={monthLabel} loading={loading} onPrev={prevMonth} onNext={nextMonth} avg={avgHabitPct} metrics={heroMetrics} />
 
-      {/* Monthly Summary */}
+      {/* Monthly totals */}
       <Card title="Monthly Summary" accentColor={C}>
         <View style={styles.statsGrid}>
-          {summaryItems.map((item, i) => (
-            <View key={i} style={[styles.statItem, { borderColor: item.color + '30' }]}>
+          {statTiles.map((item, i) => (
+            <View key={i} style={styles.statItem}>
+              <View style={styles.hairline} />
               <Text style={styles.statIcon}>{item.icon}</Text>
               <Text style={[styles.statVal, { color: item.color }]}>{item.val}</Text>
               <Text style={styles.statLabel}>{item.label}</Text>
@@ -169,15 +261,13 @@ export default function AnalyticsScreen() {
       <Card title="Habit Heatmap" accentColor={Colors.green}>
         <View style={styles.weekRow}>
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <View key={i} style={styles.dayHeaderCell}>
-              <Text style={styles.dayHeaderTxt}>{d}</Text>
-            </View>
+            <View key={i} style={styles.dayHeaderCell}><Text style={styles.dayHeaderTxt}>{d}</Text></View>
           ))}
         </View>
         {Array.from({ length: cells.length / 7 }, (_, row) => (
           <View key={row} style={styles.weekRow}>
             {cells.slice(row * 7, row * 7 + 7).map((ds, col) => {
-              if (!ds) return <View key={col} style={styles.heatCell} />;
+              if (!ds) return <View key={col} style={[styles.heatCell, { backgroundColor: 'transparent' }]} />;
               const d = dayData.find(x => x.date === ds);
               return (
                 <View key={col} style={[styles.heatCell, { backgroundColor: heatBg(d, ds) }]}>
@@ -190,119 +280,72 @@ export default function AnalyticsScreen() {
         ))}
         <View style={styles.heatLegend}>
           {[
-            { color: Colors.greenBg, label: '80%+', text: Colors.green },
-            { color: Colors.yellowBg, label: '50–79%', text: Colors.yellow },
-            { color: Colors.orangeBg, label: '<50%', text: Colors.orange },
-            { color: Colors.redBg, label: '0%', text: Colors.red },
+            { label: '80%+', text: Colors.ramp5 },
+            { label: '50–79%', text: Colors.ramp4 },
+            { label: '<50%', text: Colors.ramp3 },
+            { label: '0%', text: Colors.textMuted },
           ].map((l, i) => (
             <View key={i} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: l.text }]} />
-              <Text style={[styles.legendLabel, { color: l.text }]}>{l.label}</Text>
+              <Text style={styles.legendLabel}>{l.label}</Text>
             </View>
           ))}
         </View>
       </Card>
 
-      {/* Charts */}
+      {/* Trends — SVG area charts */}
       {habitChart.length >= 3 && (
         <Card title="Daily Habit Completion" accentColor={Colors.green}>
-          <LineChart
-            data={{ labels: habitChart.map(d => d.date.slice(8)), datasets: [{ data: habitChart.map(d => d.habitPct), color: () => Colors.green, strokeWidth: 2 }] }}
-            width={SW} height={160}
-            chartConfig={makeChartCfg('rgba(34,197,94,1)')}
-            bezier style={{ borderRadius: 8, overflow: 'hidden' }}
-          />
+          <Trend values={habitChart.map(d => d.habitPct)} labels={habitChart.map(d => dLabel(d.date))} color={Colors.green} unit="%" />
         </Card>
       )}
 
       {sleepChart.length >= 3 && (
         <Card title="Sleep Trend" accentColor={Colors.purple}>
-          <LineChart
-            data={{ labels: sleepChart.map(d => d.date.slice(8)), datasets: [{ data: sleepChart.map(d => d.sleepH), color: () => Colors.purple, strokeWidth: 2 }] }}
-            width={SW} height={160}
-            chartConfig={makeChartCfg('rgba(167,139,250,1)')}
-            bezier style={{ borderRadius: 8, overflow: 'hidden' }}
-          />
+          <Trend values={sleepChart.map(d => d.sleepH)} labels={sleepChart.map(d => dLabel(d.date))} color={Colors.purple} unit="h" />
         </Card>
       )}
 
       {wChart.length >= 2 && (
         <Card title="Weight Trend" accentColor={Colors.accentLight}>
-          <LineChart
-            data={{ labels: wChart.map(w => w.date.slice(8)), datasets: [{ data: wChart.map(w => w.value), color: () => Colors.accentLight, strokeWidth: 2 }] }}
-            width={SW} height={160}
-            chartConfig={makeChartCfg('rgba(165,180,252,1)')}
-            bezier style={{ borderRadius: 8, overflow: 'hidden' }}
-          />
+          <Trend values={wChart.map(w => w.value)} labels={wChart.map(w => dLabel(w.date))} color={Colors.accentLight} unit="" />
         </Card>
       )}
 
       {/* Insights */}
       <Card title="Insights" accentColor={C}>
         {goodSleepHabit !== null && badSleepHabit !== null && (
-          <View style={styles.insightRow}>
-            <View style={[styles.insightIconBox, { backgroundColor: Colors.purpleBg }]}>
-              <Text style={{ fontSize: 20 }}>😴</Text>
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Sleep → Habits Correlation</Text>
-              <Text style={styles.insightBody}>
-                7h+ sleep: <Text style={{ color: Colors.green, fontWeight: '700' }}>{goodSleepHabit}% habits</Text>
-                {'  vs  '}
-                <Text style={{ color: Colors.orange, fontWeight: '700' }}>{badSleepHabit}%</Text> on poor sleep.
-                {goodSleepHabit > badSleepHabit ? '  More sleep = better habits! 💡' : ''}
-              </Text>
-            </View>
-          </View>
+          <Insight icon="😴" bg={Colors.purpleBg} title="Sleep → Habits Correlation">
+            7h+ sleep: <Text style={{ color: Colors.green, fontWeight: '700' }}>{goodSleepHabit}% habits</Text>
+            {'  vs  '}
+            <Text style={{ color: Colors.orange, fontWeight: '700' }}>{badSleepHabit}%</Text> on poor sleep.
+            {goodSleepHabit > badSleepHabit ? '  More sleep = better habits.' : ''}
+          </Insight>
         )}
         {bestDay && (
-          <View style={styles.insightRow}>
-            <View style={[styles.insightIconBox, { backgroundColor: Colors.yellowBg }]}>
-              <Text style={{ fontSize: 20 }}>🏆</Text>
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Best Day This Month</Text>
-              <Text style={styles.insightBody}>
-                {bestDay.date} — <Text style={{ color: Colors.green, fontWeight: '700' }}>{bestDay.habitPct}% habits</Text>
-                {bestDay.gym ? ', gym ✓' : ''}
-                {bestDay.sleepH > 0 ? `, ${bestDay.sleepH.toFixed(1)}h sleep` : ''}
-              </Text>
-            </View>
-          </View>
+          <Insight icon="🏆" bg={Colors.yellowBg} title="Best Day This Month">
+            {dLabel(bestDay.date)} — <Text style={{ color: Colors.green, fontWeight: '700' }}>{bestDay.habitPct}% habits</Text>
+            {bestDay.gym ? ', gym ✓' : ''}
+            {bestDay.sleepH > 0 ? `, ${bestDay.sleepH.toFixed(1)}h sleep` : ''}
+          </Insight>
         )}
         {gymDays > 0 && (
-          <View style={styles.insightRow}>
-            <View style={[styles.insightIconBox, { backgroundColor: Colors.greenBg }]}>
-              <Text style={{ fontSize: 20 }}>💪</Text>
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Workout Frequency</Text>
-              <Text style={styles.insightBody}>
-                <Text style={{ color: Colors.green, fontWeight: '700' }}>{gymDays} gym days</Text> this month
-                {' '}({dayData.length > 0 ? (gymDays / dayData.length * 100).toFixed(0) : 0}% of days tracked)
-              </Text>
-            </View>
-          </View>
+          <Insight icon="💪" bg={Colors.greenBg} title="Workout Frequency">
+            <Text style={{ color: Colors.green, fontWeight: '700' }}>{gymDays} gym days</Text> this month
+            {' '}({pct(gymDays, tracked)}% of days tracked)
+          </Insight>
         )}
         {totalStudy > 0 && (
-          <View style={styles.insightRow}>
-            <View style={[styles.insightIconBox, { backgroundColor: Colors.orangeBg }]}>
-              <Text style={{ fontSize: 20 }}>📚</Text>
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Study Pace</Text>
-              <Text style={styles.insightBody}>
-                <Text style={{ color: Colors.orange, fontWeight: '700' }}>{totalStudy.toFixed(1)}h</Text> this month
-                {' '}·  avg {dayData.length > 0 ? (totalStudy / dayData.length).toFixed(1) : 0}h/day
-              </Text>
-            </View>
-          </View>
+          <Insight icon="📚" bg={Colors.orangeBg} title="Study Pace">
+            <Text style={{ color: Colors.orange, fontWeight: '700' }}>{totalStudy.toFixed(1)}h</Text> this month
+            {' '}·  avg {tracked > 0 ? (totalStudy / tracked).toFixed(1) : 0}h/day
+          </Insight>
         )}
-        {dayData.length === 0 && !loading && (
+        {tracked === 0 && !loading && (
           <View style={styles.emptyState}>
-            <Text style={{ fontSize: 28, marginBottom: 8 }}>📊</Text>
+            <Text style={styles.emptyEmoji}>📊</Text>
             <Text style={styles.emptyText}>No data for this month yet.</Text>
-            <Text style={styles.emptySubtext}>Start tracking to see insights!</Text>
+            <Text style={styles.emptySubtext}>Start tracking to see insights.</Text>
           </View>
         )}
       </Card>
@@ -314,40 +357,70 @@ export default function AnalyticsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
-  monthNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  navBtn: { padding: 4 },
-  navArrow: { fontSize: 32, fontWeight: '300' },
-  monthCenter: { alignItems: 'center' },
-  monthLabel: { color: Colors.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statItem: {
-    width: '22%',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderWidth: 1,
+
+  // Hero
+  hero: {
+    backgroundColor: Colors.card, borderColor: Colors.border, borderWidth: 1,
+    borderRadius: radius.lg, padding: 16, marginBottom: 12, marginTop: 6,
+    overflow: 'hidden', position: 'relative',
   },
-  statIcon: { fontSize: 16, marginBottom: 4 },
-  statVal: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  statLabel: { color: Colors.textMuted, fontSize: 8, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 3, textAlign: 'center' },
-  weekRow: { flexDirection: 'row', marginBottom: 3 },
+  heroGlow: { position: 'absolute', top: -60, right: -40, width: 180, height: 180, borderRadius: 90, opacity: 0.13 },
+  hairline: { position: 'absolute', top: 0, left: 14, right: 14, height: 1, backgroundColor: Colors.innerHighlight },
+  heroHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroTitleWrap: { alignItems: 'center' },
+  heroKicker: { color: Colors.textSecondary, fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+  heroMonth: { color: Colors.text, fontSize: 20, fontWeight: '800', letterSpacing: -0.4, marginTop: 3 },
+  navBtn: { paddingHorizontal: 6, paddingVertical: 2 },
+  navArrow: { fontSize: 30, fontWeight: '500' },
+  heroBody: { flexDirection: 'row', gap: 18, alignItems: 'center', marginTop: 16 },
+  ringVal: { color: Colors.text, fontSize: 21, fontWeight: '800', lineHeight: 24 },
+  ringSub: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroMetrics: { flex: 1, gap: 9 },
+  metric: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  mLabel: { color: Colors.textSecondary, fontSize: 12.5, fontWeight: '500', flex: 1 },
+  mVal: { color: Colors.text, fontSize: 12.5, fontWeight: '700' },
+  mBar: { width: 54 },
+
+  // Stat tiles
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 9 },
+  statItem: {
+    width: '31.5%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: radius.md,
+    paddingVertical: 14, paddingHorizontal: 4, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
+  },
+  statIcon: { fontSize: 17, marginBottom: 5 },
+  statVal: { fontSize: 18, fontWeight: '800', letterSpacing: -0.4 },
+  statLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4, textAlign: 'center' },
+
+  // Heatmap
+  weekRow: { flexDirection: 'row', marginBottom: 4 },
   dayHeaderCell: { flex: 1, alignItems: 'center', paddingBottom: 4 },
   dayHeaderTxt: { color: Colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  heatCell: { flex: 1, aspectRatio: 1, margin: 2, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surface },
-  heatDay: { fontSize: 9, fontWeight: '700' },
-  heatPct: { fontSize: 6, marginTop: 1, fontWeight: '600' },
-  heatLegend: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 12 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  heatCell: { flex: 1, aspectRatio: 1, marginHorizontal: 2, borderRadius: radius.sm - 4, alignItems: 'center', justifyContent: 'center' },
+  heatDay: { fontSize: 10, fontWeight: '700' },
+  heatPct: { fontSize: 6.5, marginTop: 1, fontWeight: '700' },
+  heatLegend: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 14 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 9, fontWeight: '700' },
-  insightRow: { flexDirection: 'row', gap: 12, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 8 },
-  insightIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  legendLabel: { fontSize: 9, fontWeight: '700', color: Colors.textSecondary },
+
+  // Trend charts
+  trendHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 },
+  trendVal: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  trendCap: { color: Colors.textMuted, fontSize: 10.5, fontWeight: '600', marginTop: 2 },
+  deltaPill: { borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 4 },
+  deltaTxt: { fontSize: 11, fontWeight: '800', letterSpacing: 0.2 },
+  trendAxis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  axisTxt: { color: Colors.textMuted, fontSize: 9.5, fontWeight: '600' },
+
+  // Insights
+  insightRow: { flexDirection: 'row', gap: 12, backgroundColor: Colors.surface, borderRadius: radius.md, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
+  insightIconBox: { width: 44, height: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  insightEmoji: { fontSize: 20 },
   insightContent: { flex: 1 },
   insightTitle: { color: Colors.text, fontSize: 13, fontWeight: '800', letterSpacing: -0.3, marginBottom: 4 },
   insightBody: { color: Colors.textSecondary, fontSize: 12, lineHeight: 19 },
   emptyState: { alignItems: 'center', paddingVertical: 20 },
+  emptyEmoji: { fontSize: 28, marginBottom: 8 },
   emptyText: { color: Colors.textMuted, fontSize: 14, fontWeight: '600' },
   emptySubtext: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
 });

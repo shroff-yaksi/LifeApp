@@ -17,32 +17,67 @@ export const Colors = {
   textSecondary: '#999999',
   textMuted: '#4d4d4d',
 
-  // Primary accent — Linear blue-purple
+  // Primary accent — brand indigo (the ONE hue this whole app is built on)
   accent: '#5E6AD2',
   accentLight: '#8b95e0',
   accentGlow: 'rgba(94,106,210,0.12)',
   accentBg: 'rgba(94,106,210,0.08)',
+  accentChipBg: 'rgba(94,106,210,0.15)', // redesign v1 accent capsule/pill fill (mockup .now/.mtag)
 
-  // Semantic palette — muted, desaturated
-  green: '#3aa870',
-  greenBg: 'rgba(58,168,112,0.08)',
-  red: '#d95f5f',
+  // Redesign v1 — 1px inner top-highlight for quiet depth (mockup --hi, no drop shadows)
+  innerHighlight: 'rgba(255,255,255,0.045)',
+
+  // ── Monochrome indigo tint ramp (single hue ≈232°, dim → bright) ─────────────
+  // Use these for ORDERED scales (mood, completion %) so intensity reads as
+  // LIGHTNESS, never as a different hue. ramp1 = lowest/worst, ramp5 = best.
+  ramp1: '#5b6191', // muted, dim  (lowest state)
+  ramp2: '#5E6AD2', // = brand accent
+  ramp3: '#7b85dd',
+  ramp4: '#98a1e8',
+  ramp5: '#b6bcf2', // bright      (best state)
+
+  // ── Decorative palette — MONOCHROME ──────────────────────────────────────────
+  // Former multi-hue semantic tokens, now collapsed onto the indigo ramp so
+  // category dots / chart series read as one deliberate tint scale, not a rainbow.
+  // NOTE: these are decorative only. `red` is the SINGLE functional feedback hue,
+  // reserved for destructive / over-limit / negative states.
+  green: '#8b95e0', // "positive / done" — bright indigo
+  greenBg: 'rgba(139,149,224,0.08)',
+  red: '#d95f5f', // ← the one restrained functional red (destructive / over-limit)
   redBg: 'rgba(217,95,95,0.08)',
-  orange: '#c4783a',
-  orangeBg: 'rgba(196,120,58,0.08)',
-  purple: '#9580d1',
-  purpleBg: 'rgba(149,128,209,0.08)',
-  pink: '#b06090',
-  pinkBg: 'rgba(176,96,144,0.08)',
-  yellow: '#b8952a',
-  yellowBg: 'rgba(184,149,42,0.08)',
-  cyan: '#2aabba',
-  cyanBg: 'rgba(42,171,186,0.08)',
-  teal: '#2b9e8f',
-  tealBg: 'rgba(43,158,143,0.08)',
+  orange: '#6E79D6',
+  orangeBg: 'rgba(110,121,214,0.08)',
+  purple: '#98a1e8',
+  purpleBg: 'rgba(152,161,232,0.08)',
+  pink: '#b0b7ee',
+  pinkBg: 'rgba(176,183,238,0.08)',
+  yellow: '#c3c8f2',
+  yellowBg: 'rgba(195,200,242,0.08)',
+  cyan: '#7b85dd',
+  cyanBg: 'rgba(123,133,221,0.08)',
+  teal: '#5E6AD2',
+  tealBg: 'rgba(94,106,210,0.08)',
 };
 
-// Per-tab full palette — accent + 4 hues for monochromatic detailing
+// Redesign v1 — hero card gradient (mockup .hero: linear-gradient(165deg,#15151b,#0f0f12)).
+// Structured for react-native-svg <LinearGradient>: `angle` in CSS degrees, `colors` top→bottom stops.
+export const heroGradient = {
+  angle: 165,
+  colors: ['#15151b', '#0f0f12'] as const,
+};
+
+// Corner-radius scale (redesign v1). lg=20 matches the mockup .card radius.
+export const radius = {
+  sm: 12,
+  md: 16,
+  lg: 20,
+  pill: 999,
+} as const;
+
+// Per-tab palette. MONOCHROME: every tab now shares the single brand-indigo
+// palette — tabs are differentiated by iconography, weight and lightness, NOT by
+// hue. Kept as a per-key map so existing call sites (TAB_PALETTE.fitness, etc.)
+// keep working; they all resolve to the same indigo.
 export type TabPalette = {
   accent: string;  // main color
   text:   string;  // lighter, for labels/values
@@ -51,82 +86,49 @@ export type TabPalette = {
   border: string;  // subtle border (20%)
 };
 
+const INDIGO_PALETTE: TabPalette = {
+  accent: '#5E6AD2',
+  text:   '#8b95e0',
+  bg:     'rgba(94,106,210,0.08)',
+  bgMid:  'rgba(94,106,210,0.16)',
+  border: 'rgba(94,106,210,0.22)',
+};
+
 export const TAB_PALETTE: Record<string, TabPalette> = {
-  index: {
-    accent: '#5E6AD2',
-    text:   '#8b95e0',
-    bg:     'rgba(94,106,210,0.08)',
-    bgMid:  'rgba(94,106,210,0.16)',
-    border: 'rgba(94,106,210,0.22)',
-  },
-  tasks: {
-    accent: '#4E8DB8',
-    text:   '#7ab0d0',
-    bg:     'rgba(78,141,184,0.08)',
-    bgMid:  'rgba(78,141,184,0.16)',
-    border: 'rgba(78,141,184,0.22)',
-  },
-  fitness: {
-    accent: '#3aa870',
-    text:   '#6dc49a',
-    bg:     'rgba(58,168,112,0.08)',
-    bgMid:  'rgba(58,168,112,0.16)',
-    border: 'rgba(58,168,112,0.22)',
-  },
-  learning: {
-    accent: '#c4783a',
-    text:   '#d99a6a',
-    bg:     'rgba(196,120,58,0.08)',
-    bgMid:  'rgba(196,120,58,0.16)',
-    border: 'rgba(196,120,58,0.22)',
-  },
-  // Growth = merged Learning + Skills tab; carries Learning's orange as its signature
-  growth: {
-    accent: '#c4783a',
-    text:   '#d99a6a',
-    bg:     'rgba(196,120,58,0.08)',
-    bgMid:  'rgba(196,120,58,0.16)',
-    border: 'rgba(196,120,58,0.22)',
-  },
-  skills: {
-    accent: '#b06090',
-    text:   '#cc8fb0',
-    bg:     'rgba(176,96,144,0.08)',
-    bgMid:  'rgba(176,96,144,0.16)',
-    border: 'rgba(176,96,144,0.22)',
-  },
-  settings: {
-    accent: '#606060',
-    text:   '#909090',
-    bg:     'rgba(96,96,96,0.08)',
-    bgMid:  'rgba(96,96,96,0.16)',
-    border: 'rgba(96,96,96,0.22)',
-  },
+  index:    INDIGO_PALETTE,
+  tasks:    INDIGO_PALETTE,
+  fitness:  INDIGO_PALETTE,
+  learning: INDIGO_PALETTE,
+  growth:   INDIGO_PALETTE,
+  skills:   INDIGO_PALETTE,
+  settings: INDIGO_PALETTE,
 };
 
-// Per-tab signature colors — muted, professional
+// Per-tab signature color — MONOCHROME: all tabs are the one brand indigo.
 export const TAB_COLORS: Record<string, string> = {
-  index:     '#5E6AD2', // Linear indigo
-  tasks:     '#4E8DB8', // muted blue
-  fitness:   '#3aa870', // muted green
-  learning:  '#c4783a', // muted orange
-  skills:    '#b06090', // muted pink
-  growth:    '#c4783a', // merged Learning + Skills tab (orange signature)
-  journal:   '#9580d1', // muted purple
-  finance:   '#2b9e8f', // muted teal
-  analytics: '#9580d1', // muted purple
-  settings:  '#606060', // neutral grey
+  index:     '#5E6AD2',
+  tasks:     '#5E6AD2',
+  fitness:   '#5E6AD2',
+  learning:  '#5E6AD2',
+  skills:    '#5E6AD2',
+  growth:    '#5E6AD2',
+  journal:   '#5E6AD2',
+  finance:   '#5E6AD2',
+  analytics: '#5E6AD2',
+  settings:  '#5E6AD2',
 };
 
+// Category colors — MONOCHROME indigo tint scale (dim → bright), NOT a rainbow.
+// Dots/timeline blocks read as one deliberate tint family.
 export const CATEGORY_COLORS: Record<string, string> = {
-  fitness: '#3aa870',
-  work: '#5E6AD2',
-  learning: '#c4783a',
-  personal: '#b06090',
-  meal: '#2aabba',
-  sleep: '#9580d1',
-  date: '#b06090',
-  skill: '#b8952a',
+  fitness:  '#8b95e0',
+  work:     '#5E6AD2',
+  learning: '#6E79D6',
+  personal: '#98a1e8',
+  meal:     '#7b85dd',
+  sleep:    '#aab2ec',
+  date:     '#b0b7ee',
+  skill:    '#c3c8f2',
 };
 
 export const LEARNING_ROTATION: Record<number, string[]> = {

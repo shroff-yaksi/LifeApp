@@ -38,6 +38,10 @@ export const getDayKey = (date: string | Date): DayKey => {
   return DAY_KEYS[d];
 };
 
+// Display-only greeting date line, e.g. "Wednesday · 14 Jul" (redesign v1 greeting).
+export const formatDayLine = (d: Date = new Date()) =>
+  `${d.toLocaleDateString('en-US', { weekday: 'long' })} · ${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })}`;
+
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));

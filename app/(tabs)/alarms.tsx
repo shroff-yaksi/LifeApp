@@ -3,18 +3,17 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch,
   Alert, RefreshControl, TextInput,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from 'expo-router';
-import { Colors, TAB_COLORS } from '../../src/constants/theme';
+import { Colors, TAB_COLORS, TAB_PALETTE, radius } from '../../src/constants/theme';
 import { getData, setData } from '../../src/utils/storage';
 import { uid } from '../../src/utils/helpers';
 import { requestPermissions, scheduleAlarmNotif, cancelAlarmNotifs } from '../../src/utils/notifications';
-import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { ModalSheet } from '../../src/components/ModalSheet';
 import { FormField } from '../../src/components/FormField';
 
 const C = TAB_COLORS.settings;
+const P = TAB_PALETTE.settings;
 
 // Expo weekday: 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
 const DAYS = [
@@ -72,16 +71,63 @@ function parseAppleMusicUri(input: string): string {
   return t.replace(/^https:\/\/music\.apple\.com/, 'music://music.apple.com');
 }
 
-const BLANK_ALARM: Omit<Alarm, 'id' | 'notifIds'> = {
-  label: '',
-  timeH: 7,
-  timeM: 0,
-  days: [2, 3, 4, 5, 6], // weekdays
-  enabled: false,
-  musicService: 'none',
-  musicUri: '',
-  musicLabel: '',
-};
+const MUSIC_ICON = { spotify: '🟢', apple_music: '🎵', none: '🔕' } as const;
+const musicName = (s: Alarm['musicService']) =>
+  s === 'spotify' ? 'Spotify' : s === 'apple_music' ? 'Apple Music' : 'None';
+
+// Uppercase section header with the signature 3px accent bar (redesign v1).
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <View style={styles.sectionHead}>
+      <View style={styles.sectionBar} />
+      <Text style={styles.sectionLabel}>{children}</Text>
+    </View>
+  );
+}
+
+// A single alarm row — hero-card feel: big time, calm meta chips, quiet enable switch.
+function AlarmRow({ alarm, onPress, onLongPress, onToggle }: {
+  alarm: Alarm;
+  onPress: () => void;
+  onLongPress: () => void;
+  onToggle: () => void;
+}) {
+  const on = alarm.enabled;
+  const dim = { color: Colors.textMuted };
+  return (
+    <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.85}>
+      <View style={[styles.alarmCard, !on && styles.alarmCardDisabled]}>
+        <View style={styles.hairline} pointerEvents="none" />
+        {on && <View style={styles.enabledRail} pointerEvents="none" />}
+        <View style={styles.alarmLeft}>
+          <View style={styles.alarmTimeRow}>
+            <Text style={[styles.alarmTime, !on && dim]}>{formatTime(alarm.timeH, alarm.timeM)}</Text>
+            <Text style={[styles.alarmAmPm, !on && dim]}>{to12(alarm.timeH).split(' ')[1]}</Text>
+          </View>
+          <Text style={[styles.alarmLabel, !on && dim]} numberOfLines={1}>{alarm.label}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.dayPill}>
+              <Text style={styles.dayPillTxt}>{parseDaysSummary(alarm.days)}</Text>
+            </View>
+            {alarm.musicService !== 'none' && (
+              <View style={styles.musicChip}>
+                <Text style={styles.musicChipTxt} numberOfLines={1}>
+                  {MUSIC_ICON[alarm.musicService]} {alarm.musicLabel || musicName(alarm.musicService)}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <Switch
+          value={on}
+          onValueChange={onToggle}
+          trackColor={{ false: Colors.surfaceHighest, true: C + '60' }}
+          thumbColor={on ? C : Colors.textMuted}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 export default function AlarmsScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
@@ -218,8 +264,8 @@ export default function AlarmsScreen() {
     ]);
   };
 
-  const serviceLabel = (s: Alarm['musicService']) =>
-    s === 'spotify' ? '🎵 Spotify' : s === 'apple_music' ? '🎵 Apple Music' : null;
+  const spinHour = (d: number) => setFHour(h => String(((parseInt(h) || 0) + d + 24) % 24).padStart(2, '0'));
+  const spinMin = (d: number) => setFMin(m => String(((parseInt(m) || 0) + d + 60) % 60).padStart(2, '0'));
 
   return (
     <ScrollView
@@ -229,56 +275,41 @@ export default function AlarmsScreen() {
     >
       {/* Info banner */}
       <View style={styles.infoBanner}>
-        <Text style={styles.infoIcon}>ℹ️</Text>
+        <View style={styles.hairline} pointerEvents="none" />
+        <View style={styles.infoIconWrap}>
+          <Text style={styles.infoIcon}>⏰</Text>
+        </View>
         <Text style={styles.infoText}>
-          Alarm rings as a notification. Tap the notification to instantly open your chosen Spotify or Apple Music track.
+          Alarms ring as a notification. Tap it to instantly open your chosen Spotify or Apple Music track.
         </Text>
+      </View>
+
+      {/* Section header + add */}
+      <View style={styles.listHead}>
+        <SectionLabel>Your Alarms</SectionLabel>
+        <TouchableOpacity style={styles.addBtn} onPress={openAdd} activeOpacity={0.75}>
+          <Text style={styles.addBtnTxt}>+  Add</Text>
+        </TouchableOpacity>
       </View>
 
       {alarms.length === 0 && (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>⏰</Text>
-          <Text style={styles.emptyTitle}>No alarms set</Text>
-          <Text style={styles.emptyDesc}>Tap + Add to create your first alarm</Text>
+          <View style={styles.emptyIconWrap}>
+            <Text style={styles.emptyIcon}>⏰</Text>
+          </View>
+          <Text style={styles.emptyTitle}>No alarms yet</Text>
+          <Text style={styles.emptyDesc}>Tap “+ Add” to create your first alarm</Text>
         </View>
       )}
 
       {alarms.map(alarm => (
-        <TouchableOpacity key={alarm.id} onPress={() => openEdit(alarm)} onLongPress={() => deleteAlarm(alarm)} activeOpacity={0.85}>
-          <View style={[styles.alarmCard, !alarm.enabled && styles.alarmCardDisabled]}>
-            <View style={styles.alarmLeft}>
-              <View style={styles.alarmTimeRow}>
-                <Text style={[styles.alarmTime, !alarm.enabled && { color: Colors.textMuted }]}>
-                  {formatTime(alarm.timeH, alarm.timeM)}
-                </Text>
-                <Text style={[styles.alarmAmPm, !alarm.enabled && { color: Colors.textMuted }]}>
-                  {to12(alarm.timeH).split(' ')[1]}
-                </Text>
-              </View>
-              <Text style={[styles.alarmLabel, !alarm.enabled && { color: Colors.textMuted }]}>
-                {alarm.label}
-              </Text>
-              <View style={styles.alarmMeta}>
-                <Text style={styles.alarmDays}>{parseDaysSummary(alarm.days)}</Text>
-                {serviceLabel(alarm.musicService) && (
-                  <>
-                    <Text style={styles.alarmMetaDot}>·</Text>
-                    <Text style={styles.alarmMusic}>
-                      {serviceLabel(alarm.musicService)}
-                      {alarm.musicLabel ? `  ${alarm.musicLabel}` : ''}
-                    </Text>
-                  </>
-                )}
-              </View>
-            </View>
-            <Switch
-              value={alarm.enabled}
-              onValueChange={() => toggleEnabled(alarm)}
-              trackColor={{ false: Colors.surfaceHighest, true: C + '60' }}
-              thumbColor={alarm.enabled ? C : Colors.textMuted}
-            />
-          </View>
-        </TouchableOpacity>
+        <AlarmRow
+          key={alarm.id}
+          alarm={alarm}
+          onPress={() => openEdit(alarm)}
+          onLongPress={() => deleteAlarm(alarm)}
+          onToggle={() => toggleEnabled(alarm)}
+        />
       ))}
 
       {alarms.length > 0 && (
@@ -297,9 +328,10 @@ export default function AlarmsScreen() {
         <FormField label="Label" value={fLabel} onChangeText={setFLabel} placeholder="Wake Up, Nap, Wind Down…" />
 
         {/* Time */}
+        <SectionLabel>Time</SectionLabel>
         <View style={styles.timeRow}>
           <View style={styles.timeBox}>
-            <TouchableOpacity onPress={() => setFHour(h => { const n = (parseInt(h) + 1) % 24; return String(n).padStart(2, '0'); })} style={styles.timeArrow}>
+            <TouchableOpacity onPress={() => spinHour(1)} style={styles.timeArrow}>
               <Text style={styles.timeArrowTxt}>▲</Text>
             </TouchableOpacity>
             <TextInput
@@ -310,13 +342,13 @@ export default function AlarmsScreen() {
               maxLength={2}
               selectTextOnFocus
             />
-            <TouchableOpacity onPress={() => setFHour(h => { const n = (parseInt(h) - 1 + 24) % 24; return String(n).padStart(2, '0'); })} style={styles.timeArrow}>
+            <TouchableOpacity onPress={() => spinHour(-1)} style={styles.timeArrow}>
               <Text style={styles.timeArrowTxt}>▼</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.timeSep}>:</Text>
           <View style={styles.timeBox}>
-            <TouchableOpacity onPress={() => setFMin(m => { const n = (parseInt(m) + 1) % 60; return String(n).padStart(2, '0'); })} style={styles.timeArrow}>
+            <TouchableOpacity onPress={() => spinMin(1)} style={styles.timeArrow}>
               <Text style={styles.timeArrowTxt}>▲</Text>
             </TouchableOpacity>
             <TextInput
@@ -327,25 +359,31 @@ export default function AlarmsScreen() {
               maxLength={2}
               selectTextOnFocus
             />
-            <TouchableOpacity onPress={() => setFMin(m => { const n = (parseInt(m) - 1 + 60) % 60; return String(n).padStart(2, '0'); })} style={styles.timeArrow}>
+            <TouchableOpacity onPress={() => spinMin(-1)} style={styles.timeArrow}>
               <Text style={styles.timeArrowTxt}>▼</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.timeAmPm}>{parseInt(fHour, 10) < 12 ? 'AM' : 'PM'}</Text>
+          <View style={styles.ampmPill}>
+            <Text style={styles.ampmPillTxt}>{parseInt(fHour, 10) < 12 ? 'AM' : 'PM'}</Text>
+          </View>
         </View>
 
         {/* Days */}
-        <Text style={styles.sectionLabel}>REPEAT</Text>
+        <SectionLabel>Repeat</SectionLabel>
         <View style={styles.daysRow}>
-          {DAYS.map(d => (
-            <TouchableOpacity
-              key={d.value}
-              style={[styles.dayChip, fDays.includes(d.value) && { backgroundColor: C + '25', borderColor: C }]}
-              onPress={() => toggleDay(d.value)}
-            >
-              <Text style={[styles.dayChipTxt, fDays.includes(d.value) && { color: C }]}>{d.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {DAYS.map(d => {
+            const sel = fDays.includes(d.value);
+            return (
+              <TouchableOpacity
+                key={d.value}
+                style={[styles.dayChip, sel && { backgroundColor: P.bgMid, borderColor: P.border }]}
+                onPress={() => toggleDay(d.value)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dayChipTxt, sel && { color: P.text }]}>{d.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
         <View style={styles.dayShortcuts}>
           <TouchableOpacity style={styles.shortcut} onPress={() => setFDays([1, 2, 3, 4, 5, 6, 7])}>
@@ -363,22 +401,22 @@ export default function AlarmsScreen() {
         </View>
 
         {/* Music Service */}
-        <Text style={styles.sectionLabel}>MUSIC  (optional)</Text>
+        <SectionLabel>Music · optional</SectionLabel>
         <View style={styles.serviceRow}>
-          {(['none', 'spotify', 'apple_music'] as const).map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.serviceBtn, fService === s && { borderColor: C, backgroundColor: C + '18' }]}
-              onPress={() => setFService(s)}
-            >
-              <Text style={styles.serviceBtnIcon}>
-                {s === 'spotify' ? '🟢' : s === 'apple_music' ? '🎵' : '🔕'}
-              </Text>
-              <Text style={[styles.serviceBtnTxt, fService === s && { color: C }]}>
-                {s === 'none' ? 'None' : s === 'spotify' ? 'Spotify' : 'Apple Music'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(['none', 'spotify', 'apple_music'] as const).map(s => {
+            const sel = fService === s;
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.serviceBtn, sel && { borderColor: P.border, backgroundColor: P.bgMid }]}
+                onPress={() => setFService(s)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.serviceBtnIcon}>{MUSIC_ICON[s]}</Text>
+                <Text style={[styles.serviceBtnTxt, sel && { color: P.text }]}>{musicName(s)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {fService !== 'none' && (
@@ -417,78 +455,108 @@ export default function AlarmsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg, paddingHorizontal: 14, paddingTop: 8 },
 
-  infoBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: Colors.accentBg, borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: Colors.accentGlow, marginBottom: 14,
-  },
-  infoIcon: { fontSize: 16, lineHeight: 20 },
-  infoText: { flex: 1, color: Colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  // Shared 1px inner top-highlight hairline (redesign v1 — quiet depth, no drop shadows)
+  hairline: { position: 'absolute', top: 0, left: 14, right: 14, height: 1, backgroundColor: Colors.innerHighlight },
 
-  empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  emptyDesc: { color: Colors.textMuted, fontSize: 13 },
+  infoBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.card, borderRadius: radius.lg, padding: 14,
+    borderWidth: 1, borderColor: Colors.border, marginBottom: 16, overflow: 'hidden',
+  },
+  infoIconWrap: {
+    width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: P.bg, borderWidth: 1, borderColor: P.border,
+  },
+  infoIcon: { fontSize: 18 },
+  infoText: { flex: 1, color: Colors.textSecondary, fontSize: 12.5, lineHeight: 18, fontWeight: '500' },
+
+  // Section header (accent-bar + uppercase label) — matches redesign section style
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, marginBottom: 12 },
+  sectionBar: { width: 3, height: 13, borderRadius: 2, backgroundColor: C, opacity: 0.9 },
+  sectionLabel: { color: Colors.textSecondary, fontSize: 11, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
+
+  listHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  addBtn: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill,
+    backgroundColor: P.bgMid, borderWidth: 1, borderColor: P.border,
+  },
+  addBtnTxt: { color: P.text, fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
+
+  empty: { alignItems: 'center', paddingVertical: 54 },
+  emptyIconWrap: {
+    width: 72, height: 72, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, marginBottom: 16,
+  },
+  emptyIcon: { fontSize: 34 },
+  emptyTitle: { color: Colors.text, fontSize: 17, fontWeight: '800', marginBottom: 6, letterSpacing: -0.3 },
+  emptyDesc: { color: Colors.textMuted, fontSize: 13, fontWeight: '500' },
 
   alarmCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.card, borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 10,
+    backgroundColor: Colors.card, borderRadius: radius.lg, padding: 18,
+    borderWidth: 1, borderColor: Colors.border, marginBottom: 10, overflow: 'hidden',
   },
-  alarmCardDisabled: { opacity: 0.5 },
+  alarmCardDisabled: { opacity: 0.55 },
+  enabledRail: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2, backgroundColor: C, opacity: 0.85 },
   alarmLeft: { flex: 1, marginRight: 12 },
-  alarmTimeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 3 },
+  alarmTimeRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 4 },
   alarmTime: { color: Colors.text, fontSize: 40, fontWeight: '800', letterSpacing: -1.5 },
-  alarmAmPm: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
-  alarmLabel: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 4 },
-  alarmMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  alarmDays: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
-  alarmMetaDot: { color: Colors.textMuted, fontSize: 11 },
-  alarmMusic: { color: Colors.textMuted, fontSize: 11 },
+  alarmAmPm: { color: Colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  alarmLabel: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 8 },
 
-  hint: { textAlign: 'center', color: Colors.textMuted, fontSize: 10, marginTop: 4 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  dayPill: {
+    backgroundColor: Colors.surfaceHigh, borderRadius: radius.pill,
+    paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: Colors.border,
+  },
+  dayPillTxt: { color: Colors.textSecondary, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.3 },
+  musicChip: {
+    backgroundColor: P.bg, borderRadius: radius.pill, maxWidth: 190,
+    paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: P.border,
+  },
+  musicChipTxt: { color: P.text, fontSize: 10.5, fontWeight: '700' },
 
-  // Time picker
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginVertical: 16 },
+  hint: { textAlign: 'center', color: Colors.textMuted, fontSize: 11, fontWeight: '500', marginTop: 6 },
+
+  // Time picker — tidy stat-tile boxes
+  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 },
   timeBox: { alignItems: 'center', gap: 4 },
-  timeArrow: { paddingHorizontal: 16, paddingVertical: 6 },
-  timeArrowTxt: { color: Colors.textSecondary, fontSize: 14 },
+  timeArrow: { paddingHorizontal: 20, paddingVertical: 5 },
+  timeArrowTxt: { color: Colors.textMuted, fontSize: 13 },
   timeInput: {
-    width: 72, height: 56, borderRadius: 14,
+    width: 78, height: 62, borderRadius: radius.md,
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    textAlign: 'center', color: Colors.text, fontSize: 28, fontWeight: '800',
+    textAlign: 'center', color: Colors.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.5,
   },
-  timeSep: { color: Colors.text, fontSize: 32, fontWeight: '800', marginBottom: 4 },
-  timeAmPm: { color: Colors.textMuted, fontSize: 14, fontWeight: '700', marginLeft: 4, alignSelf: 'center' },
+  timeSep: { color: Colors.textSecondary, fontSize: 30, fontWeight: '800', marginBottom: 2 },
+  ampmPill: {
+    marginLeft: 4, backgroundColor: P.bgMid, borderRadius: radius.pill,
+    paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: P.border,
+  },
+  ampmPillTxt: { color: P.text, fontSize: 12, fontWeight: '800', letterSpacing: 0.4 },
 
-  sectionLabel: {
-    color: Colors.textMuted, fontSize: 9, fontWeight: '800',
-    letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10, marginTop: 4,
-  },
   daysRow: { flexDirection: 'row', gap: 6, marginBottom: 10 },
   dayChip: {
-    flex: 1, paddingVertical: 9, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
-    alignItems: 'center',
+    flex: 1, paddingVertical: 10, borderRadius: radius.sm,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, alignItems: 'center',
   },
   dayChipTxt: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
-  dayShortcuts: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 },
+  dayShortcuts: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 18 },
   shortcut: {
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill,
     backgroundColor: Colors.surfaceHigh, borderWidth: 1, borderColor: Colors.border,
   },
   shortcutTxt: { color: Colors.textSecondary, fontSize: 11, fontWeight: '600' },
 
   serviceRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   serviceBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
-    alignItems: 'center', gap: 4,
+    flex: 1, paddingVertical: 13, borderRadius: radius.md,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, alignItems: 'center', gap: 5,
   },
   serviceBtnIcon: { fontSize: 20 },
   serviceBtnTxt: { color: Colors.textSecondary, fontSize: 11, fontWeight: '700' },
 
-  uriHint: { color: Colors.textMuted, fontSize: 10, marginTop: -8, marginBottom: 12, lineHeight: 15 },
+  uriHint: { color: Colors.textMuted, fontSize: 10.5, marginTop: -8, marginBottom: 12, lineHeight: 15 },
 
   modalBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 10, marginBottom: 20 },
 });
